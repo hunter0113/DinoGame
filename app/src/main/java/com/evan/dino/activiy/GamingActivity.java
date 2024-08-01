@@ -6,15 +6,17 @@ import static android.view.View.VISIBLE;
 
 import static androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO;
 import static androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES;
-import static com.evan.dino.GameManager.DEFAULT_DURATION;
-import static com.evan.dino.GameManager.isGameOver;
+import static com.evan.dino.manager.GameManager.isGameOver;
+import static com.evan.dino.constants.Constants.CLOUD_MOVE_DURATION;
+import static com.evan.dino.constants.Constants.DEFAULT_DURATION;
+import static com.evan.dino.constants.Constants.GROUND_MOVE_DURATION;
+import static com.evan.dino.constants.Constants.HUNDRED_THOUSAND;
+import static com.evan.dino.constants.Constants.JUMP_DURATION;
+import static com.evan.dino.constants.Constants.JUMP_HEIGHT;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.transition.Scene;
-import androidx.transition.Transition;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -22,7 +24,6 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Context;
-import android.graphics.Color;
 import android.graphics.Rect;
 import android.media.SoundPool;
 import android.os.Bundle;
@@ -38,7 +39,8 @@ import android.widget.TextView;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.evan.dino.Dino;
-import com.evan.dino.GameManager;
+import com.evan.dino.manager.BackgroundManager;
+import com.evan.dino.manager.GameManager;
 import com.evan.dino.Point;
 import com.evan.dino.R;
 import com.evan.dino.Scope;
@@ -53,12 +55,9 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class GamingActivity extends AppCompatActivity {
-    private ImageView backgroundOne;
-    private ImageView backgroundTwo;
 
-    private ValueAnimator obs_ani;
+    private ValueAnimator obstacleAnimation;
     private ConstraintLayout constraintLayout;
-    private FrameLayout frameLayout;
 
     private ImageView dino_Img;
 
@@ -67,12 +66,6 @@ public class GamingActivity extends AppCompatActivity {
     private ImageView heart1, heart2, heart3;
 
     private ImageView cloud1, cloud2;
-
-    private LottieAnimationView chrome;
-
-    private SoundPool soundPool;
-
-    private int jumpID, deathID, scoreID;
 
     private boolean flag1 = false;
     private boolean flag2 = false;
@@ -88,21 +81,20 @@ public class GamingActivity extends AppCompatActivity {
 
     private final ArrayList<ImageView> imageViews = new ArrayList<>();
 
-    private int width, height = 0;
+    private int width = 0;
 
     private CountDownTimer cdt;
-
-    private final int HUNDRED_THOUSAND = 100000;
 
     private ArrayList<Scope> InjuryRangeList;
 
     private final boolean testMode = false;
-    private boolean isFirstJump = false;
 
     private TimerTask obstacleTask;
 
     private SoundManager soundManager;
     private AnimationManager animationManager;
+
+    private BackgroundManager backgroundManager;
 
 
     @Override
@@ -123,16 +115,12 @@ public class GamingActivity extends AppCompatActivity {
         DisplayMetrics metric = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(metric);
         width = metric.widthPixels;
-        height = metric.heightPixels;
 
         // Music //
         // 初始化 SoundManager
         soundManager = new SoundManager(this);
 
         constraintLayout = findViewById(R.id.constraint_layout);
-        frameLayout = findViewById(R.id.main_frame_layout);
-        backgroundOne = findViewById(R.id.background_one);
-        backgroundTwo = findViewById(R.id.background_two);
         dino_Img = findViewById(R.id.dino);
         tree1 = findViewById(R.id.tree_one);
         tree2 = findViewById(R.id.tree_two);
@@ -146,8 +134,8 @@ public class GamingActivity extends AppCompatActivity {
 
         cloud1 = findViewById(R.id.cloud1);
         cloud2 = findViewById(R.id.cloud2);
-        chrome = findViewById(R.id.animation_chrome_view);
 
+        backgroundManager = new BackgroundManager(findViewById(R.id.background_one), findViewById(R.id.background_two));
         GameManager.setConstraintLayout(constraintLayout);
 
         imageViews.add(heart1);
@@ -176,13 +164,13 @@ public class GamingActivity extends AppCompatActivity {
 
 
         // 小恐龍點擊事件 //
-        jumpClick(this);
+        jumpClick();
 
 
         animationManager = new AnimationManager(width);
         // 背景移動 //
-        animationManager.startGroundAnimation(backgroundOne, backgroundTwo, 3000); // 設定地面動畫的持續時間，例如3000毫秒
-        animationManager.startCloudAnimation(cloud1, cloud2);
+        animationManager.startGroundAnimation(backgroundManager.getBackgroundOne(), backgroundManager.getBackgroundTwo(), GROUND_MOVE_DURATION); // 設定地面動畫的持續時間，例如3000毫秒
+        animationManager.startCloudAnimation(cloud1, cloud2, CLOUD_MOVE_DURATION);
 
         // 障礙移動與判定 //
         makeObstacle();
@@ -192,51 +180,6 @@ public class GamingActivity extends AppCompatActivity {
 
     }
 
-
-//    private void showBoss() {
-//        boss_ani = ValueAnimator.ofInt(0, - ((width + 300) / 2) );
-//        boss_ani.setInterpolator(new LinearInterpolator());
-//        boss_ani.setDuration(6000);
-//
-//        boss_ani.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-//            @Override
-//            public void onAnimationUpdate(ValueAnimator animation) {
-//                int currentValue = (Integer) animation.getAnimatedValue();
-//                chrome.setTranslationX(currentValue);
-//            }
-//        });
-//
-//        boss_ani.addListener(new Animator.AnimatorListener() {
-//            @Override
-//            public void onAnimationStart(Animator animator) {
-//
-//            }
-//
-//            @Override
-//            public void onAnimationEnd(Animator animator) {
-//
-//                // 啟動攻擊
-//                LottieAnimationView animationView;
-//                animationView = findViewById(R.id.rocket);
-//                animationView.setBackgroundColor(Color.parseColor("#00000000"));
-//                animationView.setTranslationX(chrome.getX() + 200);
-//                animationView.setTranslationY(chrome.getY() + 200);
-//                animationView.setVisibility(VISIBLE);
-//                animationView.playAnimation();
-//            }
-//
-//            @Override
-//            public void onAnimationCancel(Animator animator) {
-//
-//            }
-//
-//            @Override
-//            public void onAnimationRepeat(Animator animator) {
-//
-//            }
-//        });
-//        boss_ani.start();
-//    }
 
     private void countScore() {
         cdt = new CountDownTimer(HUNDRED_THOUSAND, 1) {
@@ -334,11 +277,11 @@ public class GamingActivity extends AppCompatActivity {
         Rect dinoRect = new Rect();
 
         // TODO 障礙物移動
-        obs_ani = ValueAnimator.ofInt(0, -width - childImage.getWidth());
+        obstacleAnimation = ValueAnimator.ofInt(0, -width - childImage.getWidth());
 
 
         // TODO 觸碰判定
-        obs_ani.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+        obstacleAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
                 int currentValue = (Integer) animation.getAnimatedValue();
@@ -383,7 +326,7 @@ public class GamingActivity extends AppCompatActivity {
             }
         });
 
-        obs_ani.addListener(new Animator.AnimatorListener() {
+        obstacleAnimation.addListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animator) {
                 GameManager.obstacle++;
@@ -450,9 +393,9 @@ public class GamingActivity extends AppCompatActivity {
 
         // TODO 障礙物移動
         double real_width = (double) childImage.getWidth() / (double) width;
-        obs_ani.setInterpolator(new LinearInterpolator());
-        obs_ani.setDuration(Double.valueOf(duration * (1 + real_width)).longValue());
-        obs_ani.start();
+        obstacleAnimation.setInterpolator(new LinearInterpolator());
+        obstacleAnimation.setDuration(Double.valueOf(duration * (1 + real_width)).longValue());
+        obstacleAnimation.start();
 
     }
 
@@ -475,106 +418,7 @@ public class GamingActivity extends AppCompatActivity {
     }
 
     // TODO 跳耀
-    private void jumpClick(Context context) {
-        dino_Img.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Log.e("Evan", "jumpClick");
-                if (!isFirstJump) {
-                    isFirstJump = true;
-                    animationManager.pause();
-//                    Scene secondScene = Scene.getSceneForLayout(frameLayout, R.layout.layout_second_scene, context);
-
-//                    Transition.TransitionListener transitionListener = new Transition.TransitionListener() {
-//                        @Override
-//                        public void onTransitionStart(@NonNull Transition transition) {
-//                            obstacleTask.cancel();
-//
-//                            constraintLayout = findViewById(R.id.constraint_layout);
-//                            frameLayout = findViewById(R.id.main_frame_layout);
-//                            backgroundOne = findViewById(R.id.background_one);
-//                            backgroundTwo = findViewById(R.id.background_two);
-//                            dino_Img = findViewById(R.id.dino);
-//                            tv_score = findViewById(R.id.score);
-//                            tv_gameOver = findViewById(R.id.game_over);
-//
-//                            heart1 = findViewById(R.id.heart1);
-//                            heart2 = findViewById(R.id.heart2);
-//                            heart3 = findViewById(R.id.heart3);
-//
-//                            chrome = findViewById(R.id.animation_chrome_view);
-//
-//                            GameManager.setConstraintLayout(constraintLayout);
-//
-//                            imageViews.add(heart1);
-//                            imageViews.add(heart2);
-//                            imageViews.add(heart3);
-//
-//                            dino = new Dino(dino_Img, imageViews);
-//                            dino.init();
-//                            dino.setHeart(3);
-//
-//                            RunTask runTask = new RunTask(dino_Img);
-//                            TimerManager.startRun(runTask);
-//
-//                            // Point //
-//                            Point point1 = new Point(5, 7);
-//                            Point point2 = new Point(9, 9);
-//                            Scope scope1 = new Scope(point1, point2);
-//
-//                            Point point3 = new Point(4, 1);
-//                            Point point4 = new Point(7, 6);
-//                            Scope scope2 = new Scope(point3, point4);
-//
-//                            InjuryRangeList = new ArrayList<>();
-//                            InjuryRangeList.add(scope1);
-//                            InjuryRangeList.add(scope2);
-//
-//                            // 小恐龍點擊事件 //
-//                            jumpClick(context);
-//
-//                            // 背景移動 //
-//                            groundMove();
-//                        }
-//
-//                        @Override
-//                        public void onTransitionEnd(@NonNull Transition transition) {
-//                            Log.e("Evan", "onTransitionEnd");
-//                            showBoss();
-//                        }
-//
-//                        @Override
-//                        public void onTransitionCancel(@NonNull Transition transition) {
-//
-//                        }
-//
-//                        @Override
-//                        public void onTransitionPause(@NonNull Transition transition) {
-//
-//                        }
-//
-//                        @Override
-//                        public void onTransitionResume(@NonNull Transition transition) {
-//
-//                        }
-//                    };
-                }
-
-                if (isGameOver) {
-                    reStart();
-                    return;
-                }
-
-                if (GameManager.isJump) {
-                    return;
-                }
-
-                soundManager.playJumpSound();
-
-                startJumpAnimation();
-            }
-        });
-
+    private void jumpClick() {
         GameManager.getConstraintLayout().setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -597,10 +441,10 @@ public class GamingActivity extends AppCompatActivity {
 
     private void startJumpAnimation() {
         GameManager.isJump = true;
-        ObjectAnimator jumpUp = ObjectAnimator.ofFloat(dino_Img, "translationY", -350f);
-        jumpUp.setDuration(300);
+        ObjectAnimator jumpUp = ObjectAnimator.ofFloat(dino_Img, "translationY", JUMP_HEIGHT);
+        jumpUp.setDuration(JUMP_DURATION);
         ObjectAnimator jumpDown = ObjectAnimator.ofFloat(dino_Img, "translationY", 0f);
-        jumpDown.setDuration(300);
+        jumpDown.setDuration(JUMP_DURATION);
         AnimatorSet jumpSet = new AnimatorSet();
         jumpSet.playSequentially(jumpUp, jumpDown);
         jumpSet.addListener(new AnimatorListenerAdapter() {
@@ -654,8 +498,8 @@ public class GamingActivity extends AppCompatActivity {
                     return;
                 }
                 animationManager.stop();
-                animationManager.startCloudAnimation(cloud1,cloud2);
-                animationManager.startGroundAnimation(backgroundOne, backgroundTwo, duration);
+                animationManager.startCloudAnimation(cloud1,cloud2, CLOUD_MOVE_DURATION);
+                animationManager.startGroundAnimation(backgroundManager.getBackgroundOne(), backgroundManager.getBackgroundTwo(), duration);
             }
         });
     }

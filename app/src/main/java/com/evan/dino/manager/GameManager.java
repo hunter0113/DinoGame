@@ -1,4 +1,4 @@
-package com.evan.dino;
+package com.evan.dino.manager;
 
 import android.animation.ValueAnimator;
 import android.media.Image;
@@ -7,6 +7,8 @@ import android.widget.ImageView;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
 
+import com.evan.dino.Dino;
+import com.evan.dino.TimerManager;
 import com.evan.dino.task.RunTask;
 
 import java.util.ArrayList;
@@ -17,7 +19,6 @@ import java.util.ArrayList;
  * Description：
  */
 public class GameManager {
-    public final static int DEFAULT_DURATION = 2000;
 
     public static boolean isGameOver = false;
 
