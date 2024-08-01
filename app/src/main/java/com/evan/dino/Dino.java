@@ -1,6 +1,6 @@
 package com.evan.dino;
 
-import static com.evan.dino.GameManager.isGameOver;
+import static com.evan.dino.manager.GameManager.isGameOver;
 
 import android.animation.Animator;
 import android.animation.ValueAnimator;
@@ -9,6 +9,8 @@ import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
+
+import com.evan.dino.manager.GameManager;
 import com.evan.dino.task.RunTask;
 import java.util.ArrayList;
 
