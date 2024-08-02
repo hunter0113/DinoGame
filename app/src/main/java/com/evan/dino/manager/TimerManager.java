@@ -1,4 +1,4 @@
-package com.evan.dino;
+package com.evan.dino.manager;
 
 import android.widget.ImageView;
 
