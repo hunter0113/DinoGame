@@ -1,14 +1,12 @@
 package com.evan.dino.manager;
 
 import android.animation.ValueAnimator;
-import android.media.Image;
 import android.view.View;
 import android.widget.ImageView;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
 
 import com.evan.dino.Dino;
-import com.evan.dino.TimerManager;
 import com.evan.dino.task.RunTask;
 
 import java.util.ArrayList;

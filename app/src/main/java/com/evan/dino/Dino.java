@@ -11,6 +11,7 @@ import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 
 import com.evan.dino.manager.GameManager;
+import com.evan.dino.manager.TimerManager;
 import com.evan.dino.task.RunTask;
 import java.util.ArrayList;
 
