@@ -12,14 +12,14 @@ import java.util.Timer;
  * Description：
  */
 public class TimerManager {
-    public static Timer runTimer;
+    public Timer runTimer;
 
-    public static void startRun(RunTask runTask) {
+    public void startRun(RunTask runTask) {
         runTimer = new Timer();
         runTimer.schedule(runTask, 0, 100);
     }
 
-    public static void stopRun() {
+    public void stopRun() {
         runTimer.cancel();
     }
 }

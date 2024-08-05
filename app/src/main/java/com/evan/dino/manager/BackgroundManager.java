@@ -3,8 +3,8 @@ package com.evan.dino.manager;
 import android.widget.ImageView;
 
 public class BackgroundManager {
-    private ImageView backgroundOne;
-    private ImageView backgroundTwo;
+    private final ImageView backgroundOne;
+    private final ImageView backgroundTwo;
 
     public BackgroundManager(ImageView backgroundOne, ImageView backgroundTwo) {
         this.backgroundOne = backgroundOne;
