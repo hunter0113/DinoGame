@@ -48,7 +48,7 @@ public class GameManager {
         jump_ani = animator;
     }
 
-    public static void restart(Dino dino, ImageView dino_Img, ArrayList<ImageView> imageViews){
+    public static void restart(Dino dino, ArrayList<ImageView> imageViews){
         isGameOver = false;
         isJump = false;
         obstacle = 0;
@@ -57,7 +57,7 @@ public class GameManager {
         dino.init();
         dino.setHeart(3);
 
-        RunTask runTask = new RunTask(dino_Img);
+        RunTask runTask = new RunTask(dino.getDinoImageView());
         TimerManager.startRun(runTask);
 
         for(int i = 0; i< imageViews.size(); i++){

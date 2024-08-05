@@ -12,10 +12,12 @@ import android.os.Looper;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 
+import com.evan.dino.Dino;
 import com.evan.dino.Point;
 import com.evan.dino.R;
 import com.evan.dino.Scope;
 import com.evan.dino.activiy.GamingActivity;
+import com.evan.dino.listener.GameStatusListener;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -27,19 +29,25 @@ public class ObstacleManager {
     private ValueAnimator obstacleAnimation;
     private boolean flag1, flag2, flag3;
 
-    private ImageView tree1, tree2, tree3;
+    private final ImageView tree1;
+    private final ImageView tree2;
+    private final ImageView tree3;
 
-    private ArrayList<Scope> InjuryRangeList;
+    private final Dino dino;
+
+    private final ArrayList<Scope> InjuryRangeList;
+
+    private final GameStatusListener gameStatusListener;
 
 
     // Point //
-    Point point1 = new Point(5, 7);
-    Point point2 = new Point(9, 9);
-    Scope scope1 = new Scope(point1, point2);
+    private final Point point1 = new Point(5, 7);
+    private final Point point2 = new Point(9, 9);
+    private final Scope scope1 = new Scope(point1, point2);
 
-    Point point3 = new Point(4, 1);
-    Point point4 = new Point(7, 6);
-    Scope scope2 = new Scope(point3, point4);
+    private final Point point3 = new Point(4, 1);
+    private final Point point4 = new Point(7, 6);
+    private final Scope scope2 = new Scope(point3, point4);
 
     public void reSetTree() {
         tree1.setVisibility(VISIBLE);
@@ -51,17 +59,19 @@ public class ObstacleManager {
     }
 
 
-    public ObstacleManager(ImageView tree1, ImageView tree2, ImageView tree3) {
+    public ObstacleManager(Dino dino, ImageView tree1, ImageView tree2, ImageView tree3, GameStatusListener gameStatusListener) {
+        this.dino = dino;
         this.tree1 = tree1;
         this.tree2 = tree2;
         this.tree3 = tree3;
+        this.gameStatusListener = gameStatusListener;
 
         InjuryRangeList = new ArrayList<>();
         InjuryRangeList.add(scope1);
         InjuryRangeList.add(scope2);
     }
 
-    public void startObstacleGeneration(int width, int duration) {
+    public void startObstacleGeneration(int width) {
         TimerTask obstacleTask = new TimerTask() {
             @Override
             public void run() {
@@ -89,11 +99,11 @@ public class ObstacleManager {
         Rect obsRect = new Rect();
         Rect dinoRect = new Rect();
 
-        // TODO 障礙物移動
+        // 障礙物移動
         obstacleAnimation = ValueAnimator.ofInt(0, -width - childImage.getWidth());
 
 
-        // TODO 觸碰判定
+        // 觸碰判定
         obstacleAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
@@ -101,12 +111,12 @@ public class ObstacleManager {
                 childImage.setTranslationX(currentValue);
 
                 // 無敵 //
-                if (GamingActivity.dino.getInvincible()) {
+                if (dino.getInvincible()) {
                     return;
                 }
 
                 childImage.getHitRect(obsRect);
-                GamingActivity.dinoImg.getHitRect(dinoRect);
+                dino.getDinoImageView().getHitRect(dinoRect);
 
                 for (int i = 0; i < InjuryRangeList.size(); i++) {
                     int x1 = InjuryRangeList.get(i).getBLPoint().getX();
@@ -125,16 +135,19 @@ public class ObstacleManager {
 
 
                     if (Rect.intersects(obsRect, dinoRect)) {
-                        GamingActivity.dino.hurtAnimation();
+                        dino.hurtAnimation();
                     }
 
-                    GamingActivity.dinoImg.getHitRect(dinoRect);
+                    dino.getDinoImageView().getHitRect(dinoRect);
                 }
 
 
                 if (isGameOver) {
                     animation.cancel();
-                    GameOver();
+                    if (null != treeTimer) {
+                        treeTimer.cancel();
+                    }
+                    gameStatusListener.onGameOver();
                 }
             }
         });
@@ -204,30 +217,12 @@ public class ObstacleManager {
             }
         });
 
-        // TODO 障礙物移動
+        // 障礙物移動
         new Handler(Looper.getMainLooper()).post(() -> {
             double real_width = (double) childImage.getWidth() / (double) width;
             obstacleAnimation.setInterpolator(new LinearInterpolator());
             obstacleAnimation.setDuration(Double.valueOf(DEFAULT_DURATION * (1 + real_width)).longValue());
             obstacleAnimation.start();
         });
-    }
-
-    private void GameOver() {
-        GamingActivity.soundManager.playDeathSound();
-
-        GamingActivity.dinoImg.setImageResource(R.drawable.dino_6);
-        GamingActivity.tv_gameOver.setVisibility(VISIBLE);
-
-        if (GameManager.getJump_ani().isRunning()) {
-            GameManager.getJump_ani().cancel();
-        }
-
-        GamingActivity.animationManager.pause();
-        TimerManager.stopRun();
-
-        if (null != treeTimer) {
-            treeTimer.cancel();
-        }
     }
 }
