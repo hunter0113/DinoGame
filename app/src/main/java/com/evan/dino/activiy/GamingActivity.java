@@ -2,6 +2,7 @@ package com.evan.dino.activiy;
 
 
 import static android.view.View.INVISIBLE;
+import static android.view.View.VISIBLE;
 
 import static androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO;
 import static androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES;
@@ -30,6 +31,7 @@ import android.widget.TextView;
 
 
 import com.evan.dino.Dino;
+import com.evan.dino.listener.GameStatusListener;
 import com.evan.dino.manager.BackgroundManager;
 import com.evan.dino.manager.GameManager;
 import com.evan.dino.R;
@@ -43,21 +45,9 @@ import java.util.ArrayList;
 
 public class GamingActivity extends AppCompatActivity {
 
-    private ConstraintLayout constraintLayout;
+    private Dino dino;
 
-    public static ImageView dinoImg;
-
-
-    private ImageView heart1, heart2, heart3;
-
-    private ImageView cloud1, cloud2;
-
-
-    public static Dino dino;
-
-    private int duration = DEFAULT_DURATION;
-
-    public static TextView tv_score, tv_gameOver;
+    private TextView tv_score, tv_gameOver;
 
     private final ArrayList<ImageView> hearts = new ArrayList<>();
 
@@ -65,9 +55,8 @@ public class GamingActivity extends AppCompatActivity {
 
     private CountDownTimer cdt;
 
-    public static SoundManager soundManager;
-    public static  AnimationManager animationManager;
-    public static  BackgroundManager backgroundManager;
+    private SoundManager soundManager;
+    private AnimationManager animationManager;
     private ObstacleManager obstacleManager;
 
 
@@ -94,31 +83,30 @@ public class GamingActivity extends AppCompatActivity {
         // 初始化 SoundManager
         soundManager = new SoundManager(this);
 
-        constraintLayout = findViewById(R.id.constraint_layout);
-        dinoImg = findViewById(R.id.dino);
-        obstacleManager = new ObstacleManager(findViewById(R.id.tree_one), findViewById(R.id.tree_two), findViewById(R.id.tree_three));
+        ConstraintLayout constraintLayout = findViewById(R.id.constraint_layout);
         tv_score = findViewById(R.id.score);
         tv_gameOver = findViewById(R.id.game_over);
 
-        heart1 = findViewById(R.id.heart1);
-        heart2 = findViewById(R.id.heart2);
-        heart3 = findViewById(R.id.heart3);
+        ImageView heart1 = findViewById(R.id.heart1);
+        ImageView heart2 = findViewById(R.id.heart2);
+        ImageView heart3 = findViewById(R.id.heart3);
 
-        cloud1 = findViewById(R.id.cloud1);
-        cloud2 = findViewById(R.id.cloud2);
+        ImageView cloud1 = findViewById(R.id.cloud1);
+        ImageView cloud2 = findViewById(R.id.cloud2);
 
-        backgroundManager = new BackgroundManager(findViewById(R.id.background_one), findViewById(R.id.background_two));
+        BackgroundManager backgroundManager = new BackgroundManager(findViewById(R.id.background_one), findViewById(R.id.background_two));
         GameManager.setConstraintLayout(constraintLayout);
 
         hearts.add(heart1);
         hearts.add(heart2);
         hearts.add(heart3);
 
-        dino = new Dino(dinoImg, hearts);
+        dino = new Dino(findViewById(R.id.dino), hearts);
         dino.init();
         dino.setHeart(3);
 
-        RunTask runTask = new RunTask(dinoImg);
+
+        RunTask runTask = new RunTask(dino.getDinoImageView());
         TimerManager.startRun(runTask);
 
 
@@ -126,13 +114,35 @@ public class GamingActivity extends AppCompatActivity {
         jumpClick();
 
 
+        obstacleManager = new ObstacleManager(dino, findViewById(R.id.tree_one), findViewById(R.id.tree_two), findViewById(R.id.tree_three), new GameStatusListener() {
+            @Override
+            public void onGameStart() {
+
+            }
+
+            @Override
+            public void onGameOver() {
+                soundManager.playDeathSound();
+
+                dino.getDinoImageView().setImageResource(R.drawable.dino_6);
+                tv_gameOver.setVisibility(VISIBLE);
+
+                if (GameManager.getJump_ani().isRunning()) {
+                    GameManager.getJump_ani().cancel();
+                }
+
+                animationManager.pause();
+                TimerManager.stopRun();
+            }
+        });
+
         animationManager = new AnimationManager(width);
         // 背景移動 //
         animationManager.startGroundAnimation(backgroundManager.getBackgroundOne(), backgroundManager.getBackgroundTwo(), GROUND_MOVE_DURATION); // 設定地面動畫的持續時間，例如3000毫秒
         animationManager.startCloudAnimation(cloud1, cloud2, CLOUD_MOVE_DURATION);
 
         // 障礙移動與判定 //
-        obstacleManager.startObstacleGeneration(width, duration); // 設定障礙物的寬度和持續時間，例如1000毫秒
+        obstacleManager.startObstacleGeneration(width);
 
         // 分數計算與加速 //
         countScore();
@@ -164,7 +174,7 @@ public class GamingActivity extends AppCompatActivity {
     }
 
 
-    // TODO 跳耀
+    // 跳耀
     private void jumpClick() {
         GameManager.getConstraintLayout().setOnClickListener(new View.OnClickListener() {
             @Override
@@ -178,18 +188,18 @@ public class GamingActivity extends AppCompatActivity {
                     return;
                 }
 
-
-                soundManager.playJumpSound();
                 startJumpAnimation();
             }
         });
     }
 
+
     private void startJumpAnimation() {
+        soundManager.playJumpSound();
         GameManager.isJump = true;
-        ObjectAnimator jumpUp = ObjectAnimator.ofFloat(dinoImg, "translationY", JUMP_HEIGHT);
+        ObjectAnimator jumpUp = ObjectAnimator.ofFloat(dino.getDinoImageView(), "translationY", JUMP_HEIGHT);
         jumpUp.setDuration(JUMP_DURATION);
-        ObjectAnimator jumpDown = ObjectAnimator.ofFloat(dinoImg, "translationY", 0f);
+        ObjectAnimator jumpDown = ObjectAnimator.ofFloat(dino.getDinoImageView(), "translationY", 0f);
         jumpDown.setDuration(JUMP_DURATION);
         AnimatorSet jumpSet = new AnimatorSet();
         jumpSet.playSequentially(jumpUp, jumpDown);
@@ -204,9 +214,8 @@ public class GamingActivity extends AppCompatActivity {
 
 
     private void reStart() {
-        GameManager.restart(dino, dinoImg, hearts);
+        GameManager.restart(dino, hearts);
 
-        duration = DEFAULT_DURATION;
         animationManager.resume();
 
         obstacleManager.reSetTree();
@@ -214,7 +223,7 @@ public class GamingActivity extends AppCompatActivity {
         tv_gameOver.setVisibility(INVISIBLE);
 
         // 障礙移動與判定 //
-        obstacleManager.startObstacleGeneration(width, duration); // 設定障礙物的寬度和持續時間，例如1000毫秒
+        obstacleManager.startObstacleGeneration(width); // 設定障礙物的寬度和持續時間，例如1000毫秒
 
         cdt.cancel();
         countScore();
@@ -224,12 +233,12 @@ public class GamingActivity extends AppCompatActivity {
     }
 
 
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
         soundManager.release();
     }
+
 }
 
 

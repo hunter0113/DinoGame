@@ -8,7 +8,7 @@ import com.evan.dino.constants.Constants;
 
 public class AnimationManager {
     private ValueAnimator groundAnimator, cloudAnimator;
-    private int width;
+    private final int width;
 
     public AnimationManager(int width) {
         this.width = width;
