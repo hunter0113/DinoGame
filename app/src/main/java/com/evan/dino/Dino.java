@@ -2,17 +2,12 @@ package com.evan.dino;
 
 import static com.evan.dino.manager.GameManager.isGameOver;
 
-import android.animation.Animator;
-import android.animation.ValueAnimator;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 
-import com.evan.dino.manager.GameManager;
-import com.evan.dino.manager.TimerManager;
-import com.evan.dino.task.RunTask;
 import java.util.ArrayList;
 
 /**
@@ -38,61 +33,12 @@ public class Dino {
         heart3 = imageViews.get(2);
     }
 
-    public void init() {
-        setTranslateAnimation();
-    }
-
     public void setHeart(int heart) {
         this.heart = heart;
     }
 
     public boolean getInvincible() {
         return invincible;
-    }
-
-
-    private void setTranslateAnimation() {
-        ValueAnimator jump_ani = ValueAnimator.ofInt(0, -300, 0);
-        GameManager.setJump_ani(jump_ani);
-
-        GameManager.getJump_ani().addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-            @Override
-            public void onAnimationUpdate(ValueAnimator animation) {
-                int currentValue = (Integer) animation.getAnimatedValue();
-                dinoImg.setTranslationY(currentValue);
-            }
-        });
-
-        GameManager.getJump_ani().addListener(new Animator.AnimatorListener() {
-            @Override
-            public void onAnimationStart(Animator animator) {
-                GameManager.isJump = true;
-                dinoImg.setImageResource(R.drawable.dino_1);
-                TimerManager.stopRun();
-            }
-
-            @Override
-            public void onAnimationEnd(Animator animator) {
-                GameManager.isJump = false;
-                if(!isGameOver){
-
-                    RunTask runTask = new RunTask(dinoImg);
-                    TimerManager.startRun(runTask);
-                }
-            }
-
-            @Override
-            public void onAnimationCancel(Animator animator) {
-
-            }
-
-            @Override
-            public void onAnimationRepeat(Animator animator) {
-
-            }
-        });
-        GameManager.getJump_ani().setInterpolator(new LinearInterpolator());
-        GameManager.getJump_ani().setDuration(700);
     }
 
     public void hurtAnimation() {

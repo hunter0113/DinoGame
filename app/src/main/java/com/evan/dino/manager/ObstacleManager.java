@@ -14,9 +14,7 @@ import android.widget.ImageView;
 
 import com.evan.dino.Dino;
 import com.evan.dino.Point;
-import com.evan.dino.R;
 import com.evan.dino.Scope;
-import com.evan.dino.activiy.GamingActivity;
 import com.evan.dino.listener.GameStatusListener;
 
 import java.util.ArrayList;
