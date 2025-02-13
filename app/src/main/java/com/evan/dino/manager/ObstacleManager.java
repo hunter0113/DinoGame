@@ -9,6 +9,7 @@ import android.animation.ValueAnimator;
 import android.graphics.Rect;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 
@@ -141,6 +142,8 @@ public class ObstacleManager {
 
 
                 if (isGameOver) {
+                    isGameOver = false;
+                    GameManager.needRestart = true;
                     animation.cancel();
                     if (null != treeTimer) {
                         treeTimer.cancel();

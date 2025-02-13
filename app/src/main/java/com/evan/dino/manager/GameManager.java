@@ -23,6 +23,8 @@ public class GameManager {
 
     public static boolean isGameOver = false;
 
+    public static boolean needRestart = false;
+
     public boolean isJump = false;
 
     public static int obstacle = 0;
@@ -40,7 +42,6 @@ public class GameManager {
     }
 
     public void restart(Dino dino, ArrayList<ImageView> imageViews, TimerManager timerManager) {
-        isGameOver = false;
         isJump = false;
         obstacle = 0;
         step = 0;
