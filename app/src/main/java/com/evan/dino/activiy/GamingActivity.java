@@ -24,6 +24,7 @@ import android.animation.ObjectAnimator;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -39,8 +40,11 @@ import com.evan.dino.manager.AnimationManager;
 import com.evan.dino.manager.ObstacleManager;
 import com.evan.dino.manager.SoundManager;
 import com.evan.dino.task.RunTask;
+import com.evan.dino.viewmodel.GamingViewModel;
 
 import java.util.ArrayList;
+
+import androidx.lifecycle.ViewModelProvider;
 
 public class GamingActivity extends AppCompatActivity {
 
@@ -63,23 +67,34 @@ public class GamingActivity extends AppCompatActivity {
 
     private TimerManager timerManager = new TimerManager();
 
+    private GamingViewModel gamingViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_gaming);
 
+        gamingViewModel = new ViewModelProvider(this).get(GamingViewModel.class);
+
+        // 觀察分數變化
+        gamingViewModel.getScore().observe(this, score -> {
+            tv_score.setText(String.valueOf(score));
+        });
+
+        // 觀察遊戲結束狀態
+        gamingViewModel.isGameOver().observe(this, isGameOver -> {
+            if (isGameOver) {
+                tv_gameOver.setVisibility(View.VISIBLE);
+            } else {
+                tv_gameOver.setVisibility(View.INVISIBLE);
+            }
+        });
+
         BackgroundManager backgroundManager = new BackgroundManager(findViewById(R.id.background_one), findViewById(R.id.background_two));
         soundManager = new SoundManager(this);
 
         // Model
-        Bundle bundle = getIntent().getExtras();
-        if (bundle.getString("mode").equals("light")) {
-            AppCompatDelegate.setDefaultNightMode(MODE_NIGHT_NO);
-
-        } else if (bundle.getString("mode").equals("night")) {
-            AppCompatDelegate.setDefaultNightMode(MODE_NIGHT_YES);
-        }
+        AppCompatDelegate.setDefaultNightMode(MODE_NIGHT_NO);
 
         constraintLayout = findViewById(R.id.constraint_layout);
         tv_score = findViewById(R.id.score);
@@ -160,7 +175,7 @@ public class GamingActivity extends AppCompatActivity {
         constraintLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (isGameOver) {
+                if (GameManager.needRestart) {
                     reStart();
                     return;
                 }
@@ -195,6 +210,7 @@ public class GamingActivity extends AppCompatActivity {
 
 
     private void reStart() {
+        GameManager.needRestart = false;
         gameManager.restart(dino, hearts, timerManager);
         animationManager.resume();
         obstacleManager.reSetTree();

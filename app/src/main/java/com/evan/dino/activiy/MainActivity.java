@@ -19,29 +19,14 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         btn_start_light_Game = findViewById(R.id.start_light);
-//        btn_start_night_Game = findViewById(R.id.start_night);
-
 
         Intent intent = new Intent(this, GamingActivity.class);
 
         btn_start_light_Game.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Bundle bundle = new Bundle();
-                bundle.putString("mode","light");
-                intent.putExtras(bundle);
                 startActivity(intent);
             }
         });
-
-//        btn_start_night_Game.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                Bundle bundle = new Bundle();
-//                bundle.putString("mode","night");
-//                intent.putExtras(bundle);
-//                startActivity(intent);
-//            }
-//        });
     }
 }
