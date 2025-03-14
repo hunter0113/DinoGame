@@ -1,14 +1,10 @@
 package com.evan.dino;
 
-import static com.evan.dino.manager.GameManager.isGameOver;
-
-import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 
-import java.util.ArrayList;
 
 /**
  * Created by Evan on 2022/4/13.
@@ -18,57 +14,56 @@ import java.util.ArrayList;
 public class Dino {
 
     private final ImageView dinoImg;
-    private final ImageView heart1;
-    private final ImageView heart2;
-    private final ImageView heart3;
+    private boolean invincible;
 
-    private int heart = 0;
-    private boolean invincible = false;
+    private OnHurtListener hurtListener;
 
-
-    public Dino(ImageView dino, ArrayList<ImageView> imageViews) {
-        dinoImg = dino;
-        heart1 = imageViews.get(0);
-        heart2 = imageViews.get(1);
-        heart3 = imageViews.get(2);
-    }
-
-    public void setHeart(int heart) {
-        this.heart = heart;
-    }
-
-    public boolean getInvincible() {
+    public boolean getInvincible(){
         return invincible;
     }
 
-    public void hurtAnimation() {
-        heart--;
+    public Dino(ImageView dino) {
+        dinoImg = dino;
+    }
 
-        if (heart == 2) {
-            heart1.setVisibility(View.INVISIBLE);
-        }
+    public interface OnHurtListener {
+        void onHurt();
+    }
 
-        if (heart == 1) {
-            heart2.setVisibility(View.INVISIBLE);
-        }
 
-        if (heart == 0) {
-            heart3.setVisibility(View.INVISIBLE);
-            isGameOver = true;
+    public void setOnHurtListener(OnHurtListener listener) {
+        this.hurtListener = listener;
+    }
+
+
+    public void hurtHandle(){
+        hurtListener.onHurt();
+    }
+
+
+    // 播放受傷動畫
+    public void playHurtAnimation() {
+        if (invincible){
             return;
         }
 
+        invincible = true;
         initAnimation();
     }
 
     private void initAnimation() {
-
         final Animation animation = new AlphaAnimation(1, 0);
         animation.setDuration(50);
         animation.setInterpolator(new LinearInterpolator());
         animation.setRepeatCount(8);
         animation.setRepeatMode(Animation.REVERSE);
-        animation.setAnimationListener(new Animation.AnimationListener() {
+        animation.setAnimationListener(createAnimationListener());
+        dinoImg.startAnimation(animation);
+    }
+
+
+    private Animation.AnimationListener createAnimationListener() {
+        return new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {
                 invincible = true;
@@ -83,8 +78,7 @@ public class Dino {
             public void onAnimationRepeat(Animation animation) {
 
             }
-        });
-        dinoImg.setAnimation(animation);
+        };
     }
 
     public ImageView getDinoImageView() {

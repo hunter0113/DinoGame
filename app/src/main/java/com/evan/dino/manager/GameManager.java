@@ -6,8 +6,6 @@ import android.view.View;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 
-import androidx.constraintlayout.widget.ConstraintLayout;
-
 import com.evan.dino.Dino;
 import com.evan.dino.R;
 import com.evan.dino.task.RunTask;
@@ -41,13 +39,12 @@ public class GameManager {
         jump_ani = animator;
     }
 
-    public void restart(Dino dino, ArrayList<ImageView> imageViews, TimerManager timerManager) {
+    public void restart(Dino dino, ArrayList<ImageView> imageViews, ActionTimerManager timerManager) {
         isJump = false;
         obstacle = 0;
         step = 0;
 
         setTranslateAnimation(dino, timerManager);
-        dino.setHeart(3);
 
         RunTask runTask = new RunTask(dino.getDinoImageView());
         timerManager.startRun(runTask);
@@ -57,7 +54,7 @@ public class GameManager {
         }
     }
 
-    public void setTranslateAnimation(Dino dino, TimerManager timerManager) {
+    public void setTranslateAnimation(Dino dino, ActionTimerManager timerManager) {
         jump_ani = ValueAnimator.ofInt(0, -300, 0);
         setJump_ani(jump_ani);
 
@@ -81,7 +78,6 @@ public class GameManager {
             public void onAnimationEnd(Animator animator) {
                 isJump = false;
                 if(!isGameOver){
-
                     RunTask runTask = new RunTask(dino.getDinoImageView());
                     timerManager.startRun(runTask);
                 }

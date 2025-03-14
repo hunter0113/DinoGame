@@ -9,13 +9,12 @@ import android.animation.ValueAnimator;
 import android.graphics.Rect;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 
 import com.evan.dino.Dino;
-import com.evan.dino.Point;
-import com.evan.dino.Scope;
+import com.evan.dino.model.Point;
+import com.evan.dino.model.Scope;
 import com.evan.dino.listener.GameStatusListener;
 
 import java.util.ArrayList;
@@ -134,7 +133,7 @@ public class ObstacleManager {
 
 
                     if (Rect.intersects(obsRect, dinoRect)) {
-                        dino.hurtAnimation();
+                        dino.hurtHandle();
                     }
 
                     dino.getDinoImageView().getHitRect(dinoRect);
