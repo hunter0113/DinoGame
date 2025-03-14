@@ -5,8 +5,6 @@ import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 
 import static androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO;
-import static androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES;
-import static com.evan.dino.manager.GameManager.isGameOver;
 import static com.evan.dino.constants.Constants.CLOUD_MOVE_DURATION;
 import static com.evan.dino.constants.Constants.GROUND_MOVE_DURATION;
 import static com.evan.dino.constants.Constants.HUNDRED_THOUSAND;
@@ -24,7 +22,6 @@ import android.animation.ObjectAnimator;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -35,7 +32,7 @@ import com.evan.dino.listener.GameStatusListener;
 import com.evan.dino.manager.BackgroundManager;
 import com.evan.dino.manager.GameManager;
 import com.evan.dino.R;
-import com.evan.dino.manager.TimerManager;
+import com.evan.dino.manager.ActionTimerManager;
 import com.evan.dino.manager.AnimationManager;
 import com.evan.dino.manager.ObstacleManager;
 import com.evan.dino.manager.SoundManager;
@@ -50,6 +47,9 @@ public class GamingActivity extends AppCompatActivity {
 
     private Dino dino;
 
+    private CountDownTimer cdt;
+
+
     private TextView tv_score, tv_gameOver;
 
     private ConstraintLayout constraintLayout;
@@ -58,14 +58,12 @@ public class GamingActivity extends AppCompatActivity {
 
     private int width = 0;
 
-    private CountDownTimer cdt;
-
     private SoundManager soundManager;
     private AnimationManager animationManager;
     private ObstacleManager obstacleManager;
-    private GameManager gameManager = new GameManager();
+    private final GameManager gameManager = new GameManager();
 
-    private TimerManager timerManager = new TimerManager();
+    private final ActionTimerManager timerManager = new ActionTimerManager();
 
     private GamingViewModel gamingViewModel;
 
@@ -76,25 +74,9 @@ public class GamingActivity extends AppCompatActivity {
 
         gamingViewModel = new ViewModelProvider(this).get(GamingViewModel.class);
 
-        // 觀察分數變化
-        gamingViewModel.getScore().observe(this, score -> {
-            tv_score.setText(String.valueOf(score));
-        });
-
-        // 觀察遊戲結束狀態
-        gamingViewModel.isGameOver().observe(this, isGameOver -> {
-            if (isGameOver) {
-                tv_gameOver.setVisibility(View.VISIBLE);
-            } else {
-                tv_gameOver.setVisibility(View.INVISIBLE);
-            }
-        });
-
         BackgroundManager backgroundManager = new BackgroundManager(findViewById(R.id.background_one), findViewById(R.id.background_two));
         soundManager = new SoundManager(this);
 
-        // Model
-        AppCompatDelegate.setDefaultNightMode(MODE_NIGHT_NO);
 
         constraintLayout = findViewById(R.id.constraint_layout);
         tv_score = findViewById(R.id.score);
@@ -118,8 +100,64 @@ public class GamingActivity extends AppCompatActivity {
         hearts.add(heart2);
         hearts.add(heart3);
 
-        dino = new Dino(findViewById(R.id.dino), hearts);
-        dino.setHeart(3);
+        dino = new Dino(findViewById(R.id.dino));
+
+        // 觀察分數變化
+        gamingViewModel.getScore().observe(this, score -> {
+            tv_score.setText(String.valueOf(score));
+        });
+
+        // 觀察遊戲結束狀態
+        gamingViewModel.isGameOver().observe(this, isGameOver -> {
+            if (isGameOver) {
+                GameManager.isGameOver = true;
+
+                soundManager.playDeathSound();
+
+                dino.getDinoImageView().setImageResource(R.drawable.dino_6);
+                tv_gameOver.setVisibility(VISIBLE);
+
+                if (gameManager.getJump_ani().isRunning()) {
+                    gameManager.getJump_ani().cancel();
+                }
+
+
+                animationManager.pause();
+                timerManager.stopRun();
+
+                tv_gameOver.setVisibility(View.VISIBLE);
+                cdt.cancel();
+
+                timerManager.stopRun();
+
+            } else {
+                tv_gameOver.setVisibility(View.INVISIBLE);
+            }
+        });
+
+
+
+        // 監聽是否需要播放受傷動畫
+        gamingViewModel.shouldPlayHurtAnimation().observe(this, shouldPlay -> {
+            if (shouldPlay) {
+                dino.playHurtAnimation();
+            }
+        });
+
+        // 當受到傷害時減少生命值
+        dino.setOnHurtListener(() -> gamingViewModel.decreaseHeart());
+
+        // 觀察生命值變化，控制 UI 顯示
+        gamingViewModel.getHeart().observe(this, heart -> {
+            if (heart == 2) {
+                heart1.setVisibility(View.INVISIBLE);
+            } else if (heart == 1) {
+                heart2.setVisibility(View.INVISIBLE);
+            } else if (heart == 0) {
+                heart3.setVisibility(View.INVISIBLE);
+            }
+        });
+
 
         gameManager.setTranslateAnimation(dino, timerManager);
 
@@ -142,31 +180,22 @@ public class GamingActivity extends AppCompatActivity {
         obstacleManager.startObstacleGeneration(width);
 
         // 分數計算與加速 //
-        countScore();
+        initCountDownTimer(gamingViewModel);
+
     }
 
-
-    private void countScore() {
+    private void initCountDownTimer(GamingViewModel viewModel) {
         cdt = new CountDownTimer(HUNDRED_THOUSAND, 1) {
             @Override
             public void onTick(long millisUntilFinished) {
-                // 更新分數
-                // 分數到一定程度 則加速
-                if (isGameOver) {
-                    this.cancel();
-                    return;
-                }
-
-                tv_score.setText(String.valueOf(HUNDRED_THOUSAND - millisUntilFinished));
+                viewModel.increaseScore(HUNDRED_THOUSAND - millisUntilFinished);
             }
 
             @Override
             public void onFinish() {
-                // 破關
-                tv_score.setText(String.valueOf(1000000));
+
             }
-        };
-        cdt.start();
+        }.start();;
     }
 
 
@@ -219,10 +248,11 @@ public class GamingActivity extends AppCompatActivity {
         // 障礙移動與判定 //
         obstacleManager.startObstacleGeneration(width); // 設定障礙物的寬度和持續時間，例如1000毫秒
 
-        cdt.cancel();
-        countScore();
+        cdt.start();
 
         gameManager.getJump_ani().end();
+
+        gamingViewModel.reset();
     }
 
 
@@ -248,17 +278,7 @@ public class GamingActivity extends AppCompatActivity {
 
             @Override
             public void onGameOver() {
-                soundManager.playDeathSound();
 
-                dino.getDinoImageView().setImageResource(R.drawable.dino_6);
-                tv_gameOver.setVisibility(VISIBLE);
-
-                if (gameManager.getJump_ani().isRunning()) {
-                    gameManager.getJump_ani().cancel();
-                }
-
-                animationManager.pause();
-                timerManager.stopRun();
             }
         });
     }

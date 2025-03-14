@@ -8,10 +8,9 @@ import android.view.View;
 import android.widget.Button;
 
 import com.evan.dino.R;
-import com.evan.dino.activiy.GamingActivity;
 
 public class MainActivity extends AppCompatActivity {
-    private Button btn_start_light_Game, btn_start_night_Game;
+    private Button btn_start_light_Game;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

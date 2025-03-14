@@ -1,7 +1,5 @@
 package com.evan.dino.manager;
 
-import android.widget.ImageView;
-
 import com.evan.dino.task.RunTask;
 
 import java.util.Timer;
@@ -11,7 +9,7 @@ import java.util.Timer;
  * <p>
  * Description：
  */
-public class TimerManager {
+public class ActionTimerManager {
     public Timer runTimer;
 
     public void startRun(RunTask runTask) {
