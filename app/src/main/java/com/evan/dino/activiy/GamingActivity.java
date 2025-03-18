@@ -28,7 +28,6 @@ import android.widget.TextView;
 
 
 import com.evan.dino.Dino;
-import com.evan.dino.listener.GameStatusListener;
 import com.evan.dino.manager.BackgroundManager;
 import com.evan.dino.manager.GameManager;
 import com.evan.dino.R;
@@ -61,7 +60,7 @@ public class GamingActivity extends AppCompatActivity {
     private SoundManager soundManager;
     private AnimationManager animationManager;
     private ObstacleManager obstacleManager;
-    private final GameManager gameManager = new GameManager();
+    private GameManager gameManager;
 
     private final ActionTimerManager timerManager = new ActionTimerManager();
 
@@ -100,7 +99,7 @@ public class GamingActivity extends AppCompatActivity {
         hearts.add(heart2);
         hearts.add(heart3);
 
-        dino = new Dino(findViewById(R.id.dino));
+        dino = new Dino(findViewById(R.id.dino), gamingViewModel);
 
         // 觀察分數變化
         gamingViewModel.getScore().observe(this, score -> {
@@ -110,8 +109,6 @@ public class GamingActivity extends AppCompatActivity {
         // 觀察遊戲結束狀態
         gamingViewModel.isGameOver().observe(this, isGameOver -> {
             if (isGameOver) {
-                GameManager.isGameOver = true;
-
                 soundManager.playDeathSound();
 
                 dino.getDinoImageView().setImageResource(R.drawable.dino_6);
@@ -137,15 +134,13 @@ public class GamingActivity extends AppCompatActivity {
 
 
 
-        // 監聽是否需要播放受傷動畫
+        // 觀察受傷動畫觸發
         gamingViewModel.shouldPlayHurtAnimation().observe(this, shouldPlay -> {
             if (shouldPlay) {
                 dino.playHurtAnimation();
+                gamingViewModel.setPlayHurtAnimation(false); // 使用setter方法重置標誌
             }
         });
-
-        // 當受到傷害時減少生命值
-        dino.setOnHurtListener(() -> gamingViewModel.decreaseHeart());
 
         // 觀察生命值變化，控制 UI 顯示
         gamingViewModel.getHeart().observe(this, heart -> {
@@ -159,6 +154,8 @@ public class GamingActivity extends AppCompatActivity {
         });
 
 
+        // 初始化GameManager並傳入ViewModel
+        gameManager = new GameManager(gamingViewModel);
         gameManager.setTranslateAnimation(dino, timerManager);
 
         RunTask runTask = new RunTask(dino.getDinoImageView());
@@ -204,12 +201,16 @@ public class GamingActivity extends AppCompatActivity {
         constraintLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (GameManager.needRestart) {
+                // 檢查是否需要重新開始遊戲
+                Boolean needRestartValue = gamingViewModel.needRestart().getValue();
+                if (needRestartValue != null && needRestartValue) {
                     reStart();
                     return;
                 }
 
-                if (gameManager.isJump) {
+                // 檢查是否已經在跳躍 - 只使用ViewModel狀態
+                Boolean isJumpingValue = gamingViewModel.isJumping().getValue();
+                if (isJumpingValue != null && isJumpingValue) {
                     return;
                 }
 
@@ -221,7 +222,8 @@ public class GamingActivity extends AppCompatActivity {
 
     private void startJumpAnimation() {
         soundManager.playJumpSound();
-        gameManager.isJump = true;
+        gamingViewModel.setJumping(true);
+        
         ObjectAnimator jumpUp = ObjectAnimator.ofFloat(dino.getDinoImageView(), "translationY", JUMP_HEIGHT);
         jumpUp.setDuration(JUMP_DURATION);
         ObjectAnimator jumpDown = ObjectAnimator.ofFloat(dino.getDinoImageView(), "translationY", 0f);
@@ -231,7 +233,7 @@ public class GamingActivity extends AppCompatActivity {
         jumpSet.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
-                gameManager.isJump = false;
+                gamingViewModel.setJumping(false);
             }
         });
         jumpSet.start();
@@ -239,14 +241,14 @@ public class GamingActivity extends AppCompatActivity {
 
 
     private void reStart() {
-        GameManager.needRestart = false;
+        gamingViewModel.setNeedRestart(false);
         gameManager.restart(dino, hearts, timerManager);
         animationManager.resume();
         obstacleManager.reSetTree();
         tv_gameOver.setVisibility(INVISIBLE);
 
         // 障礙移動與判定 //
-        obstacleManager.startObstacleGeneration(width); // 設定障礙物的寬度和持續時間，例如1000毫秒
+        obstacleManager.startObstacleGeneration(width);
 
         cdt.start();
 
@@ -269,18 +271,8 @@ public class GamingActivity extends AppCompatActivity {
         // Music //
         soundManager = new SoundManager(this);
 
-
-        obstacleManager = new ObstacleManager(dino, findViewById(R.id.tree_one), findViewById(R.id.tree_two), findViewById(R.id.tree_three), new GameStatusListener() {
-            @Override
-            public void onGameStart() {
-
-            }
-
-            @Override
-            public void onGameOver() {
-
-            }
-        });
+        // 初始化ObstacleManager並傳入ViewModel
+        obstacleManager = new ObstacleManager(dino, findViewById(R.id.tree_one), findViewById(R.id.tree_two), findViewById(R.id.tree_three), gamingViewModel);
     }
 }
 

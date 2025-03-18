@@ -2,7 +2,6 @@ package com.evan.dino.manager;
 
 import static android.view.View.VISIBLE;
 import static com.evan.dino.constants.Constants.DEFAULT_DURATION;
-import static com.evan.dino.manager.GameManager.isGameOver;
 
 import android.animation.Animator;
 import android.animation.ValueAnimator;
@@ -15,7 +14,7 @@ import android.widget.ImageView;
 import com.evan.dino.Dino;
 import com.evan.dino.model.Point;
 import com.evan.dino.model.Scope;
-import com.evan.dino.listener.GameStatusListener;
+import com.evan.dino.viewmodel.GamingViewModel;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -35,7 +34,7 @@ public class ObstacleManager {
 
     private final ArrayList<Scope> InjuryRangeList;
 
-    private final GameStatusListener gameStatusListener;
+    private final GamingViewModel viewModel;  // 替換GameStatusListener為ViewModel
 
 
     // Point //
@@ -57,12 +56,12 @@ public class ObstacleManager {
     }
 
 
-    public ObstacleManager(Dino dino, ImageView tree1, ImageView tree2, ImageView tree3, GameStatusListener gameStatusListener) {
+    public ObstacleManager(Dino dino, ImageView tree1, ImageView tree2, ImageView tree3, GamingViewModel viewModel) {
         this.dino = dino;
         this.tree1 = tree1;
         this.tree2 = tree2;
         this.tree3 = tree3;
-        this.gameStatusListener = gameStatusListener;
+        this.viewModel = viewModel;
 
         InjuryRangeList = new ArrayList<>();
         InjuryRangeList.add(scope1);
@@ -133,21 +132,23 @@ public class ObstacleManager {
 
 
                     if (Rect.intersects(obsRect, dinoRect)) {
-                        dino.hurtHandle();
+                        viewModel.decreaseHeart();
                     }
 
                     dino.getDinoImageView().getHitRect(dinoRect);
                 }
 
 
-                if (isGameOver) {
-                    isGameOver = false;
-                    GameManager.needRestart = true;
+                // 使用ViewModel的遊戲狀態而不是靜態變數
+                if (viewModel.isGameOver().getValue() != null && viewModel.isGameOver().getValue()) {
+                    // 取消動畫
                     animation.cancel();
                     if (null != treeTimer) {
                         treeTimer.cancel();
                     }
-                    gameStatusListener.onGameOver();
+                    
+                    // 設置ViewModel的重啟標誌
+                    viewModel.setNeedRestart(true);
                 }
             }
         });
@@ -155,8 +156,9 @@ public class ObstacleManager {
         obstacleAnimation.addListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animator) {
-                GameManager.obstacle++;
-
+                // 使用ViewModel增加障礙物計數
+                viewModel.increaseObstacleCount();
+                
                 switch (flag) {
                     case 1:
                         tree1.setVisibility(VISIBLE);
@@ -177,8 +179,9 @@ public class ObstacleManager {
 
             @Override
             public void onAnimationEnd(Animator animator) {
-                GameManager.obstacle--;
-
+                // 使用ViewModel減少障礙物計數
+                viewModel.decreaseObstacleCount();
+                
                 switch (flag) {
                     case 1:
                         flag1 = false;

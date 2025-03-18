@@ -5,6 +5,7 @@ import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 
+import com.evan.dino.viewmodel.GamingViewModel;
 
 /**
  * Created by Evan on 2022/4/13.
@@ -14,40 +15,24 @@ import android.widget.ImageView;
 public class Dino {
 
     private final ImageView dinoImg;
-    private boolean invincible;
-
-    private OnHurtListener hurtListener;
+    private final GamingViewModel viewModel;
 
     public boolean getInvincible(){
-        return invincible;
+        Boolean invincible = viewModel.isInvincible().getValue();
+        return invincible != null && invincible;
     }
 
-    public Dino(ImageView dino) {
-        dinoImg = dino;
+    public Dino(ImageView dino, GamingViewModel viewModel) {
+        this.dinoImg = dino;
+        this.viewModel = viewModel;
     }
 
-    public interface OnHurtListener {
-        void onHurt();
-    }
-
-
-    public void setOnHurtListener(OnHurtListener listener) {
-        this.hurtListener = listener;
-    }
-
-
-    public void hurtHandle(){
-        hurtListener.onHurt();
-    }
-
-
-    // 播放受傷動畫
     public void playHurtAnimation() {
-        if (invincible){
+        if (getInvincible()){
             return;
         }
 
-        invincible = true;
+        viewModel.setInvincible(true);
         initAnimation();
     }
 
@@ -61,17 +46,16 @@ public class Dino {
         dinoImg.startAnimation(animation);
     }
 
-
     private Animation.AnimationListener createAnimationListener() {
         return new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {
-                invincible = true;
+                viewModel.setInvincible(true);
             }
 
             @Override
             public void onAnimationEnd(Animation animation) {
-                invincible = false;
+                viewModel.setInvincible(false);
             }
 
             @Override
