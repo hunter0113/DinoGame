@@ -9,6 +9,7 @@ import android.widget.ImageView;
 import com.evan.dino.Dino;
 import com.evan.dino.R;
 import com.evan.dino.task.RunTask;
+import com.evan.dino.viewmodel.GamingViewModel;
 
 import java.util.ArrayList;
 
@@ -18,31 +19,33 @@ import java.util.ArrayList;
  * Description：
  */
 public class GameManager {
-
-    public static boolean isGameOver = false;
-
-    public static boolean needRestart = false;
-
-    public boolean isJump = false;
-
-    public static int obstacle = 0;
-
-    public static int step = 0;
-
+    // 移除所有靜態變數，完全依賴ViewModel
+    // public static boolean isGameOver = false;
+    // public static boolean needRestart = false;
+    // public static int obstacle = 0;
+    // public static int step = 0;
 
     private ValueAnimator jump_ani;
+    private final GamingViewModel viewModel;
+
+    public GameManager(GamingViewModel viewModel) {
+        this.viewModel = viewModel;
+    }
 
     public ValueAnimator getJump_ani(){
         return jump_ani;
     }
+    
     public void setJump_ani(ValueAnimator animator){
         jump_ani = animator;
     }
 
     public void restart(Dino dino, ArrayList<ImageView> imageViews, ActionTimerManager timerManager) {
-        isJump = false;
-        obstacle = 0;
-        step = 0;
+        // 使用ViewModel重置遊戲狀態
+        viewModel.setJumping(false);
+        viewModel.reset(); // 重置所有狀態
+        
+        // 不再設置靜態變數
 
         setTranslateAnimation(dino, timerManager);
 
@@ -69,15 +72,20 @@ public class GameManager {
         jump_ani.addListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animator) {
-                isJump = true;
+                // 只使用ViewModel設置跳躍狀態
+                viewModel.setJumping(true);
+                
                 dino.getDinoImageView().setImageResource(R.drawable.dino_1);
                 timerManager.stopRun();
             }
 
             @Override
             public void onAnimationEnd(Animator animator) {
-                isJump = false;
-                if(!isGameOver){
+                // 只使用ViewModel獲取遊戲狀態
+                viewModel.setJumping(false);
+                
+                Boolean isGameOverValue = viewModel.isGameOver().getValue();
+                if(isGameOverValue == null || !isGameOverValue){
                     RunTask runTask = new RunTask(dino.getDinoImageView());
                     timerManager.startRun(runTask);
                 }
@@ -85,15 +93,24 @@ public class GameManager {
 
             @Override
             public void onAnimationCancel(Animator animator) {
-
+                // Do nothing
             }
 
             @Override
             public void onAnimationRepeat(Animator animator) {
-
+                // Do nothing
             }
         });
         jump_ani.setInterpolator(new LinearInterpolator());
         jump_ani.setDuration(700);
+    }
+    
+    // 也移除isJump變數，完全使用ViewModel的isJumping
+    // public boolean isJump = false;
+    
+    // 為了方便檢查跳躍狀態，添加輔助方法
+    public boolean isJumping() {
+        Boolean isJumping = viewModel.isJumping().getValue();
+        return isJumping != null && isJumping;
     }
 }
