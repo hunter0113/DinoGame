@@ -108,7 +108,7 @@
         app:layout_constraintVertical_bias="0.184" />
 
     <ImageView
-        android:id="@+id/background_one"
+        android:id="@+id/ground_one"
         android:layout_width="match_parent"
         android:layout_height="10dp"
         android:src="@drawable/ground"
@@ -120,7 +120,7 @@
         app:layout_constraintVertical_bias="0.9" />
 
     <ImageView
-        android:id="@+id/background_two"
+        android:id="@+id/ground_two"
         android:layout_width="match_parent"
         android:layout_height="10dp"
         android:src="@drawable/ground"
@@ -138,8 +138,8 @@
         android:layout_marginStart="8dp"
         android:background="@null"
         android:src="@drawable/dino_1"
-        app:layout_constraintStart_toStartOf="@+id/background_one"
-        app:layout_constraintBottom_toBottomOf="@+id/background_one"
+        app:layout_constraintStart_toStartOf="@+id/ground_one"
+        app:layout_constraintBottom_toBottomOf="@+id/ground_one"
         />
 
     <ImageView
@@ -149,7 +149,7 @@
         android:layout_height="64dp"
         app:srcCompat="@drawable/cacti_small_1"
         app:layout_constraintStart_toEndOf="@+id/constraint_layout"
-        app:layout_constraintBottom_toBottomOf="@+id/background_one"
+        app:layout_constraintBottom_toBottomOf="@+id/ground_one"
         />
 
     <ImageView
@@ -159,7 +159,7 @@
         android:layout_height="64dp"
         app:srcCompat="@drawable/cacti_small_2"
         app:layout_constraintStart_toEndOf="@+id/constraint_layout"
-        app:layout_constraintBottom_toBottomOf="@+id/background_one"
+        app:layout_constraintBottom_toBottomOf="@+id/ground_one"
         />
 
     <ImageView
@@ -169,7 +169,7 @@
         android:layout_height="64dp"
         app:srcCompat="@drawable/cacti_small_3"
         app:layout_constraintStart_toEndOf="@+id/constraint_layout"
-        app:layout_constraintBottom_toBottomOf="@+id/background_one"
+        app:layout_constraintBottom_toBottomOf="@+id/ground_one"
         />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
