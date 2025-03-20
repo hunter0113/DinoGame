@@ -19,69 +19,59 @@ import java.util.ArrayList;
  * Description：
  */
 public class GameManager {
-    // 移除所有靜態變數，完全依賴ViewModel
-    // public static boolean isGameOver = false;
-    // public static boolean needRestart = false;
-    // public static int obstacle = 0;
-    // public static int step = 0;
-
-    private ValueAnimator jump_ani;
+    private ValueAnimator jumpAnimator;
     private final GamingViewModel viewModel;
+    private static final int JUMP_HEIGHT = -300;
+    private static final int JUMP_DURATION = 700;
 
     public GameManager(GamingViewModel viewModel) {
         this.viewModel = viewModel;
     }
 
-    public ValueAnimator getJump_ani(){
-        return jump_ani;
-    }
-    
-    public void setJump_ani(ValueAnimator animator){
-        jump_ani = animator;
+    public ValueAnimator getJumpAnimator(){
+        return jumpAnimator;
     }
 
-    public void restart(Dino dino, ArrayList<ImageView> imageViews, ActionTimerManager timerManager) {
-        // 使用ViewModel重置遊戲狀態
-        viewModel.setJumping(false);
-        viewModel.reset(); // 重置所有狀態
+    public void restart(Dino dino, ArrayList<ImageView> hearts, ActionTimerManager timerManager) {
+        // 重置遊戲狀態
+        viewModel.reset();
         
-        // 不再設置靜態變數
+        // 初始化跳躍動畫
+        initJumpAnimation(dino, timerManager);
 
-        setTranslateAnimation(dino, timerManager);
-
+        // 開始跑步動畫
         RunTask runTask = new RunTask(dino.getDinoImageView());
         timerManager.startRun(runTask);
 
-        for(int i = 0; i< imageViews.size(); i++){
-            imageViews.get(i).setVisibility(View.VISIBLE);
+        // 重置生命值顯示
+        for(ImageView heart : hearts){
+            heart.setVisibility(View.VISIBLE);
         }
     }
 
-    public void setTranslateAnimation(Dino dino, ActionTimerManager timerManager) {
-        jump_ani = ValueAnimator.ofInt(0, -300, 0);
-        setJump_ani(jump_ani);
-
-        jump_ani.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-            @Override
-            public void onAnimationUpdate(ValueAnimator animation) {
-                int currentValue = (Integer) animation.getAnimatedValue();
-                dino.getDinoImageView().setTranslationY(currentValue);
-            }
+    public void initJumpAnimation(Dino dino, ActionTimerManager timerManager) {
+        // 創建跳躍動畫
+        jumpAnimator = ValueAnimator.ofInt(0, JUMP_HEIGHT, 0);
+        jumpAnimator.setDuration(JUMP_DURATION);
+        jumpAnimator.setInterpolator(new LinearInterpolator());
+        
+        // 設置動畫更新監聽器
+        jumpAnimator.addUpdateListener(animation -> {
+            int currentValue = (Integer) animation.getAnimatedValue();
+            dino.getDinoImageView().setTranslationY(currentValue);
         });
 
-        jump_ani.addListener(new Animator.AnimatorListener() {
+        // 設置動畫狀態監聽器
+        jumpAnimator.addListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animator) {
-                // 只使用ViewModel設置跳躍狀態
                 viewModel.setJumping(true);
-                
                 dino.getDinoImageView().setImageResource(R.drawable.dino_1);
                 timerManager.stopRun();
             }
 
             @Override
             public void onAnimationEnd(Animator animator) {
-                // 只使用ViewModel獲取遊戲狀態
                 viewModel.setJumping(false);
                 
                 Boolean isGameOverValue = viewModel.isGameOver().getValue();
@@ -93,24 +83,19 @@ public class GameManager {
 
             @Override
             public void onAnimationCancel(Animator animator) {
-                // Do nothing
+                // 無需操作
             }
 
             @Override
             public void onAnimationRepeat(Animator animator) {
-                // Do nothing
+                // 無需操作
             }
         });
-        jump_ani.setInterpolator(new LinearInterpolator());
-        jump_ani.setDuration(700);
     }
     
-    // 也移除isJump變數，完全使用ViewModel的isJumping
-    // public boolean isJump = false;
-    
-    // 為了方便檢查跳躍狀態，添加輔助方法
-    public boolean isJumping() {
-        Boolean isJumping = viewModel.isJumping().getValue();
-        return isJumping != null && isJumping;
+    public void startJump() {
+        if (jumpAnimator != null && !jumpAnimator.isRunning()) {
+            jumpAnimator.start();
+        }
     }
 }
