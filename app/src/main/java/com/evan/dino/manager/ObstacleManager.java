@@ -11,7 +11,7 @@ import android.os.Looper;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 
-import com.evan.dino.Dino;
+import com.evan.dino.model.Dino;
 import com.evan.dino.model.Point;
 import com.evan.dino.model.Scope;
 import com.evan.dino.viewmodel.GamingViewModel;
@@ -36,6 +36,7 @@ public class ObstacleManager {
 
     private final GamingViewModel viewModel;  // 替換GameStatusListener為ViewModel
 
+    private final GameManager gameManager; // 新增
 
     // Point //
     private final Point point1 = new Point(5, 7);
@@ -56,12 +57,14 @@ public class ObstacleManager {
     }
 
 
-    public ObstacleManager(Dino dino, ImageView tree1, ImageView tree2, ImageView tree3, GamingViewModel viewModel) {
+    public ObstacleManager(Dino dino, ImageView tree1, ImageView tree2, ImageView tree3, 
+                          GamingViewModel viewModel, GameManager gameManager) {
         this.dino = dino;
         this.tree1 = tree1;
         this.tree2 = tree2;
         this.tree3 = tree3;
         this.viewModel = viewModel;
+        this.gameManager = gameManager; // 新增
 
         InjuryRangeList = new ArrayList<>();
         InjuryRangeList.add(scope1);
@@ -132,7 +135,7 @@ public class ObstacleManager {
 
 
                     if (Rect.intersects(obsRect, dinoRect)) {
-                        viewModel.decreaseHeart();
+                        gameManager.handleCollision();
                     }
 
                     dino.getDinoImageView().getHitRect(dinoRect);
