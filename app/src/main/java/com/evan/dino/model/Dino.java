@@ -1,4 +1,4 @@
-package com.evan.dino;
+package com.evan.dino.model;
 
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;

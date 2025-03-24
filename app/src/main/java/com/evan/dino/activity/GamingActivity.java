@@ -1,4 +1,4 @@
-package com.evan.dino.activiy;
+package com.evan.dino.activity;
 
 
 import static android.view.View.VISIBLE;
@@ -18,7 +18,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 
-import com.evan.dino.Dino;
+import com.evan.dino.model.Dino;
 import com.evan.dino.manager.BackgroundManager;
 import com.evan.dino.manager.GameManager;
 import com.evan.dino.R;
@@ -144,7 +144,7 @@ public class GamingActivity extends AppCompatActivity {
                                              findViewById(R.id.tree_one), 
                                              findViewById(R.id.tree_two), 
                                              findViewById(R.id.tree_three), 
-                                             gamingViewModel);
+                                             gamingViewModel, gameManager);
     }
 
     private void startBackgroundAnimations() {

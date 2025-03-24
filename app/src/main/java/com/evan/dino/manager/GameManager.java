@@ -6,7 +6,7 @@ import android.view.View;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 
-import com.evan.dino.Dino;
+import com.evan.dino.model.Dino;
 import com.evan.dino.R;
 import com.evan.dino.task.RunTask;
 import com.evan.dino.viewmodel.GamingViewModel;
@@ -97,5 +97,39 @@ public class GameManager {
         if (jumpAnimator != null && !jumpAnimator.isRunning()) {
             jumpAnimator.start();
         }
+    }
+
+
+    public void handleCollision() {
+        Integer heartValue = viewModel.getHeart().getValue();
+        if (heartValue == null) return;
+        
+        // 檢查無敵狀態
+        Boolean invincibleValue = viewModel.isInvincible().getValue();
+        if (invincibleValue != null && invincibleValue) {
+            return;
+        }
+
+        // 更新生命值
+        int newHeart = heartValue - 1;
+        viewModel.setHeart(newHeart);
+
+        // 處理遊戲結束邏輯
+        if (newHeart <= 0) {
+            viewModel.setGameOver(true);
+        } else {
+            // 播放受傷動畫
+            viewModel.setPlayHurtAnimation(true);
+        }
+    }
+    
+    // 處理跳躍狀態邏輯
+    public void handleJumpState(boolean isJumping) {
+        viewModel.setJumping(isJumping);
+    }
+    
+    // 處理得分邏輯
+    public void updateScore(long newScore) {
+        viewModel.setScore(newScore);
     }
 }

@@ -1,6 +1,5 @@
 package com.evan.dino.viewmodel;
 
-
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -18,7 +17,6 @@ public class GamingViewModel extends ViewModel {
     private final MutableLiveData<Integer> obstacleCount = new MutableLiveData<>(0);
     private final MutableLiveData<Integer> stepCount = new MutableLiveData<>(0);
     private final MutableLiveData<Boolean> isJumping = new MutableLiveData<>(false);
-
 
     public LiveData<Long> getScore() {
         return score;
@@ -69,16 +67,6 @@ public class GamingViewModel extends ViewModel {
         }
     }
 
-    public LiveData<Integer> getStepCount() {
-        return stepCount;
-    }
-
-    public void increaseStepCount() {
-        if (stepCount.getValue() != null) {
-            stepCount.setValue(stepCount.getValue() + 1);
-        }
-    }
-
     public LiveData<Boolean> isJumping() {
         return isJumping;
     }
@@ -96,26 +84,10 @@ public class GamingViewModel extends ViewModel {
         invincible.setValue(value);
     }
 
-    public void decreaseHeart() {
-        if (heart.getValue() == null) return;
-        
-        // 檢查無敵狀態
-        Boolean invincibleValue = invincible.getValue();
-        if (invincibleValue != null && invincibleValue) {
-            return;
-        }
 
-        int newHeart = heart.getValue() - 1;
-        heart.setValue(newHeart);
-
-        if (newHeart <= 0) {
-            gameOver.setValue(true); // 生命值歸零時，設置遊戲結束
-        } else {
-            // 播放受傷動畫
-            playHurtAnimation.setValue(true);
-        }
-    }
-
+    public void setHeart(int value) { heart.setValue(value); }
+    public void setScore(long value) { score.setValue(value); }
+    public void setGameOver(boolean value) { gameOver.setValue(value); }
 
     public void reset() {
         heart.setValue(3);
