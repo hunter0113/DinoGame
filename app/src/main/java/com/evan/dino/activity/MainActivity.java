@@ -1,4 +1,4 @@
-package com.evan.dino.activiy;
+package com.evan.dino.activity;
 
 import androidx.appcompat.app.AppCompatActivity;
 
