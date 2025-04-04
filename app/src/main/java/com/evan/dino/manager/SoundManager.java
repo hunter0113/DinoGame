@@ -3,13 +3,12 @@ package com.evan.dino.manager;
 import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.SoundPool;
-import android.util.Log;
 
 import com.evan.dino.R;
 
 public class SoundManager {
     private SoundPool soundPool;
-    private int jumpID, deathID, scoreID;
+    private final int jumpID, deathID, scoreID;
     private boolean loaded = false;
 
     public SoundManager(Context context) {

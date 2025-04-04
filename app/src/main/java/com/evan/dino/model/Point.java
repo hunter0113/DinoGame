@@ -1,4 +1,4 @@
-package com.evan.dino;
+package com.evan.dino.model;
 
 /**
  * Created by Evanwei on 2022/5/4.
