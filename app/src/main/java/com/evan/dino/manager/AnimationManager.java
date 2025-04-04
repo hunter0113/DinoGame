@@ -8,7 +8,7 @@ import com.evan.dino.constants.Constants;
 
 public class AnimationManager {
     private ValueAnimator groundAnimator, cloudAnimator;
-    private int width;
+    private final int width;
 
     public AnimationManager(int width) {
         this.width = width;
@@ -28,11 +28,11 @@ public class AnimationManager {
         groundAnimator.start();
     }
 
-    public void startCloudAnimation(ImageView cloud1, ImageView cloud2) {
+    public void startCloudAnimation(ImageView cloud1, ImageView cloud2, int duration) {
         cloudAnimator = ValueAnimator.ofFloat(1.0f, -1.0f);
         cloudAnimator.setRepeatCount(ValueAnimator.INFINITE);
         cloudAnimator.setInterpolator(new LinearInterpolator());
-        cloudAnimator.setDuration(Constants.CLOUD_MOVE_DURATION);
+        cloudAnimator.setDuration(duration);
         cloudAnimator.addUpdateListener(animation -> {
             float progress = (float) animation.getAnimatedValue();
             float translationX = width * progress;
