@@ -3,6 +3,7 @@ package com.evan.dino.viewmodel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
+import android.util.Log;
 
 public class GamingViewModel extends ViewModel {
     private final MutableLiveData<Integer> heart = new MutableLiveData<>(3); // 生命值
@@ -85,7 +86,10 @@ public class GamingViewModel extends ViewModel {
     }
 
 
-    public void setHeart(int value) { heart.setValue(value); }
+    public void setHeart(int value) { 
+        Log.d("GamingViewModel", "Setting heart value: " + value);
+        heart.setValue(value); 
+    }
     public void setScore(long value) { score.setValue(value); }
     public void setGameOver(boolean value) { gameOver.setValue(value); }
 

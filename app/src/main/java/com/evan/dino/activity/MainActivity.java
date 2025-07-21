@@ -4,28 +4,60 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
 import com.evan.dino.R;
+import com.evan.dino.utils.ExceptionHandler;
 
+/**
+ * 主活動
+ * 遊戲的入口點，提供開始遊戲的功能
+ */
 public class MainActivity extends AppCompatActivity {
-    private Button btn_start_light_Game;
+    private static final String TAG = "MainActivity";
+    
+    private Button startGameButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        btn_start_light_Game = findViewById(R.id.start_light);
-
-        Intent intent = new Intent(this, GamingActivity.class);
-
-        btn_start_light_Game.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startActivity(intent);
-            }
-        });
+        ExceptionHandler.safeExecute(() -> {
+            initializeViews();
+            setupClickListeners();
+            Log.d(TAG, "MainActivity initialized successfully");
+        }, "MainActivity onCreate");
+    }
+    
+    /**
+     * 初始化視圖元件
+     */
+    private void initializeViews() {
+        startGameButton = findViewById(R.id.start_light);
+    }
+    
+    /**
+     * 設置點擊監聽器
+     */
+    private void setupClickListeners() {
+        if (startGameButton != null) {
+            startGameButton.setOnClickListener(view -> {
+                startGamingActivity();
+            });
+        }
+    }
+    
+    /**
+     * 開始遊戲活動
+     */
+    private void startGamingActivity() {
+        ExceptionHandler.safeExecute(() -> {
+            Intent intent = new Intent(this, GamingActivity.class);
+            startActivity(intent);
+            Log.d(TAG, "GamingActivity started");
+        }, "Start gaming activity");
     }
 }
