@@ -1,4 +1,4 @@
-package com.evan.dino.task;
+package com.evan.dino.utils;
 
 import android.widget.ImageView;
 
@@ -27,12 +27,21 @@ public class RunTask extends TimerTask {
 
     @Override
     public void run() {
-        dinoImg.setImageResource(imgDinoRun[run_count]);
-
-        if (run_count == 0) {
-            run_count = 1;
-        } else {
-            run_count = 0;
+        // 確保在主線程中更新UI
+        if (dinoImg != null) {
+            dinoImg.post(() -> {
+                try {
+                    dinoImg.setImageResource(imgDinoRun[run_count]);
+                    
+                    if (run_count == 0) {
+                        run_count = 1;
+                    } else {
+                        run_count = 0;
+                    }
+                } catch (Exception e) {
+                    // 忽略異常，防止崩潰
+                }
+            });
         }
     }
 }

@@ -1,19 +1,21 @@
 package com.evan.dino.manager;
 
 import static android.view.View.VISIBLE;
-import static com.evan.dino.constants.Constants.DEFAULT_DURATION;
 
 import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.graphics.Rect;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 
+import com.evan.dino.constants.GameConstants;
 import com.evan.dino.model.Dino;
 import com.evan.dino.model.Point;
 import com.evan.dino.model.Scope;
+import com.evan.dino.utils.ExceptionHandler;
 import com.evan.dino.viewmodel.GamingViewModel;
 
 import java.util.ArrayList;
@@ -21,7 +23,13 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
+/**
+ * 障礙物管理器
+ * 負責管理遊戲中的障礙物生成、移動和碰撞檢測
+ */
 public class ObstacleManager {
+    private static final String TAG = "ObstacleManager";
+    
     private Timer treeTimer;
     private ValueAnimator obstacleAnimation;
     private boolean flag1, flag2, flag3;
@@ -32,13 +40,13 @@ public class ObstacleManager {
 
     private final Dino dino;
 
-    private final ArrayList<Scope> InjuryRangeList;
+    private final ArrayList<Scope> injuryRangeList;
 
-    private final GamingViewModel viewModel;  // 替換GameStatusListener為ViewModel
+    private final GamingViewModel viewModel;
 
-    private final GameManager gameManager; // 新增
+    private final GameManager gameManager;
 
-    // Point //
+    // 碰撞檢測範圍
     private final Point point1 = new Point(5, 7);
     private final Point point2 = new Point(9, 9);
     private final Scope scope1 = new Scope(point1, point2);
@@ -47,16 +55,47 @@ public class ObstacleManager {
     private final Point point4 = new Point(7, 6);
     private final Scope scope2 = new Scope(point3, point4);
 
-    public void reSetTree() {
-        tree1.setVisibility(VISIBLE);
-        tree1.setTranslationX(0);
-        tree2.setVisibility(VISIBLE);
-        tree2.setTranslationX(0);
-        tree3.setVisibility(VISIBLE);
-        tree3.setTranslationX(0);
+    /**
+     * 重置障礙物
+     */
+    public void resetObstacles() {
+        ExceptionHandler.safeExecute(() -> {
+            // 停止當前的障礙物生成
+            if (treeTimer != null) {
+                treeTimer.cancel();
+                treeTimer = null;
+            }
+            
+            // 停止當前的動畫
+            if (obstacleAnimation != null) {
+                obstacleAnimation.cancel();
+                obstacleAnimation = null;
+            }
+            
+            // 重置障礙物位置和狀態
+            if (tree1 != null) {
+                tree1.setVisibility(VISIBLE);
+                tree1.setTranslationX(0);
+            }
+            if (tree2 != null) {
+                tree2.setVisibility(VISIBLE);
+                tree2.setTranslationX(0);
+            }
+            if (tree3 != null) {
+                tree3.setVisibility(VISIBLE);
+                tree3.setTranslationX(0);
+            }
+            
+            // 重置標誌
+            flag1 = flag2 = flag3 = false;
+            
+            Log.d(TAG, "Obstacles reset successfully");
+        }, "Reset obstacles");
     }
 
-
+    /**
+     * 構造函數
+     */
     public ObstacleManager(Dino dino, ImageView tree1, ImageView tree2, ImageView tree3, 
                           GamingViewModel viewModel, GameManager gameManager) {
         this.dino = dino;
@@ -64,11 +103,11 @@ public class ObstacleManager {
         this.tree2 = tree2;
         this.tree3 = tree3;
         this.viewModel = viewModel;
-        this.gameManager = gameManager; // 新增
+        this.gameManager = gameManager;
 
-        InjuryRangeList = new ArrayList<>();
-        InjuryRangeList.add(scope1);
-        InjuryRangeList.add(scope2);
+        injuryRangeList = new ArrayList<>();
+        injuryRangeList.add(scope1);
+        injuryRangeList.add(scope2);
     }
 
     public void startObstacleGeneration(int width) {
@@ -107,8 +146,22 @@ public class ObstacleManager {
         obstacleAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
-                int currentValue = (Integer) animation.getAnimatedValue();
-                childImage.setTranslationX(currentValue);
+                try {
+                    if (childImage != null) {
+                        int currentValue = (Integer) animation.getAnimatedValue();
+                        
+                        // 確保在主線程中更新UI
+                        childImage.post(() -> {
+                            try {
+                                childImage.setTranslationX(currentValue);
+                            } catch (Exception e) {
+                                // 忽略異常
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    return; // 忽略異常並返回
+                }
 
                 // 無敵 //
                 if (dino.getInvincible()) {
@@ -118,27 +171,27 @@ public class ObstacleManager {
                 childImage.getHitRect(obsRect);
                 dino.getDinoImageView().getHitRect(dinoRect);
 
-                for (int i = 0; i < InjuryRangeList.size(); i++) {
-                    int x1 = InjuryRangeList.get(i).getBLPoint().getX();
-                    int y1 = InjuryRangeList.get(i).getBLPoint().getY();
-                    int x2 = InjuryRangeList.get(i).getTRPoint().getX();
-                    int y2 = InjuryRangeList.get(i).getTRPoint().getY();
+                for (int i = 0; i < injuryRangeList.size(); i++) {
+                    int x1 = injuryRangeList.get(i).getBLPoint().getX();
+                    int y1 = injuryRangeList.get(i).getBLPoint().getY();
+                    int x2 = injuryRangeList.get(i).getTRPoint().getX();
+                    int y2 = injuryRangeList.get(i).getTRPoint().getY();
 
                     int t1 = (int) (dinoRect.width() * x1 * 0.1);
                     int t2 = (int) (dinoRect.height() * y1 * 0.1);
                     int t3 = (int) (dinoRect.width() * (1 - (x2 * 0.1)));
                     int t4 = (int) (dinoRect.height() * (1 - (y2 * 0.1)));
-                    dinoRect.set(dinoRect.left + t1,
-                            dinoRect.top - t4,
-                            dinoRect.right - t3,
-                            dinoRect.bottom - t2);
+                    
+                    Rect adjustedDinoRect = new Rect(dinoRect);
+                    adjustedDinoRect.set(adjustedDinoRect.left + t1,
+                            adjustedDinoRect.top - t4,
+                            adjustedDinoRect.right - t3,
+                            adjustedDinoRect.bottom - t2);
 
-
-                    if (Rect.intersects(obsRect, dinoRect)) {
+                    if (Rect.intersects(obsRect, adjustedDinoRect)) {
                         gameManager.handleCollision();
+                        break; // 一旦檢測到碰撞就跳出循環
                     }
-
-                    dino.getDinoImageView().getHitRect(dinoRect);
                 }
 
 
@@ -227,8 +280,29 @@ public class ObstacleManager {
         new Handler(Looper.getMainLooper()).post(() -> {
             double real_width = (double) childImage.getWidth() / (double) width;
             obstacleAnimation.setInterpolator(new LinearInterpolator());
-            obstacleAnimation.setDuration(Double.valueOf(DEFAULT_DURATION * (1 + real_width)).longValue());
+            obstacleAnimation.setDuration(Double.valueOf(GameConstants.Animation.DEFAULT_DURATION * (1 + real_width)).longValue());
             obstacleAnimation.start();
         });
+    }
+    
+    /**
+     * 清理資源
+     */
+    public void cleanup() {
+        ExceptionHandler.safeExecute(() -> {
+            if (treeTimer != null) {
+                treeTimer.cancel();
+                treeTimer = null;
+            }
+            
+            if (obstacleAnimation != null) {
+                obstacleAnimation.cancel();
+                obstacleAnimation = null;
+            }
+            
+            flag1 = flag2 = flag3 = false;
+            
+            Log.d(TAG, "ObstacleManager cleaned up");
+        }, "ObstacleManager cleanup");
     }
 }
