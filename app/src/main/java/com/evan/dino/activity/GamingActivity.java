@@ -1,219 +1,380 @@
 package com.evan.dino.activity;
 
-
 import static android.view.View.VISIBLE;
-
-import static com.evan.dino.constants.Constants.CLOUD_MOVE_DURATION;
-import static com.evan.dino.constants.Constants.GROUND_MOVE_DURATION;
-import static com.evan.dino.constants.Constants.HUNDRED_THOUSAND;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.lifecycle.ViewModelProvider;
 
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-
-import com.evan.dino.model.Dino;
-import com.evan.dino.manager.BackgroundManager;
-import com.evan.dino.manager.GameManager;
 import com.evan.dino.R;
+import com.evan.dino.constants.GameConstants;
+import com.evan.dino.di.GameContainer;
 import com.evan.dino.manager.ActionTimerManager;
 import com.evan.dino.manager.AnimationManager;
+import com.evan.dino.manager.BackgroundManager;
+import com.evan.dino.manager.GameManager;
+import com.evan.dino.manager.GameStateManager;
 import com.evan.dino.manager.ObstacleManager;
 import com.evan.dino.manager.SoundManager;
-import com.evan.dino.task.RunTask;
+import com.evan.dino.model.Dino;
+import com.evan.dino.repository.GameRepository;
+import com.evan.dino.utils.ExceptionHandler;
+import com.evan.dino.utils.RunTask;
 import com.evan.dino.viewmodel.GamingViewModel;
 
 import java.util.ArrayList;
 
-import androidx.lifecycle.ViewModelProvider;
-
+/**
+ * 遊戲主活動
+ * 負責管理遊戲的UI和用戶交互
+ */
 public class GamingActivity extends AppCompatActivity {
+    private static final String TAG = "GamingActivity";
 
+    // 遊戲組件
     private Dino dino;
+    private CountDownTimer scoreTimer;
+    private TextView scoreTextView, gameOverTextView;
+    private ConstraintLayout gameLayout;
+    private final ArrayList<ImageView> heartImageViews = new ArrayList<>();
+    private int screenWidth = 0;
 
-    private CountDownTimer cdt;
-
-
-    private TextView tv_score, tv_gameOver;
-
-    private ConstraintLayout constraintLayout;
-
-    private final ArrayList<ImageView> hearts = new ArrayList<>();
-
-    private int width = 0;
-
+    // 管理器
     private SoundManager soundManager;
     private AnimationManager animationManager;
     private ObstacleManager obstacleManager;
     private GameManager gameManager;
+    private ActionTimerManager actionTimerManager;
+    private GameStateManager gameStateManager;
+    private GameRepository gameRepository;
 
-    private ActionTimerManager timerManager = new ActionTimerManager();
-
+    // ViewModel
     private GamingViewModel gamingViewModel;
+
+    // 依賴注入容器
+    private GameContainer gameContainer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_gaming);
 
-        // 初始化 ViewModel
-        gamingViewModel = new ViewModelProvider(this).get(GamingViewModel.class);
+        ExceptionHandler.safeExecute(() -> {
+            // 初始化依賴注入容器
+            gameContainer = GameContainer.getInstance(this);
 
-        // 初始化視圖元件
-        initViews();
-        
-        // 初始化遊戲管理器
-        initGameManagers();
-        
-        // 設置所有的觀察者
-        setupObservers();
-        
-        // 設置跳躍點擊事件
-        setupJumpClickListener();
-        
-        // 開始背景動畫
-        startBackgroundAnimations();
-        
-        // 開始障礙物生成
-        obstacleManager.startObstacleGeneration(width);
-        
-        // 初始化分數計時器
-        initCountDownTimer(gamingViewModel);
+            // 初始化 ViewModel
+            gamingViewModel = new ViewModelProvider(this).get(GamingViewModel.class);
+
+            // 初始化視圖元件
+            initializeViews();
+
+            // 初始化遊戲管理器
+            initializeGameManagers();
+
+            // 設置觀察者
+            setupObservers();
+
+            // 設置跳躍點擊事件
+            setupJumpClickListener();
+
+            // 開始背景動畫
+            startBackgroundAnimations();
+
+            // 開始障礙物生成
+            startObstacleGeneration();
+
+            // 初始化分數計時器
+            initializeScoreTimer();
+
+            // 初始化生命值顯示
+            Integer initialHeart = gamingViewModel.getHeart().getValue();
+            if (initialHeart != null) {
+                updateHeartsDisplay(initialHeart);
+            }
+
+            Log.d(TAG, "GamingActivity initialized successfully");
+        }, "GamingActivity onCreate");
     }
 
-    private void initViews() {
-        constraintLayout = findViewById(R.id.constraint_layout);
-        tv_score = findViewById(R.id.score);
-        tv_gameOver = findViewById(R.id.game_over);
+    /**
+     * 初始化視圖元件
+     */
+    private void initializeViews() {
+        gameLayout = findViewById(R.id.constraint_layout);
+        scoreTextView = findViewById(R.id.score);
+        gameOverTextView = findViewById(R.id.game_over);
 
         ImageView heart1 = findViewById(R.id.heart1);
         ImageView heart2 = findViewById(R.id.heart2);
         ImageView heart3 = findViewById(R.id.heart3);
 
-        hearts.add(heart1);
-        hearts.add(heart2);
-        hearts.add(heart3);
+        heartImageViews.add(heart1);
+        heartImageViews.add(heart2);
+        heartImageViews.add(heart3);
 
         // 獲取屏幕寬度
-        DisplayMetrics metric = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(metric);
-        width = metric.widthPixels;
-        
-        // 初始化恐龍角色
-        dino = new Dino(findViewById(R.id.dino), gamingViewModel);
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        screenWidth = displayMetrics.widthPixels;
     }
 
-    private void initGameManagers() {
-        // 初始化背景管理器
-        BackgroundManager backgroundManager = new BackgroundManager(
-            findViewById(R.id.ground_one), 
-            findViewById(R.id.ground_two),
-            findViewById(R.id.cloud1),
-            findViewById(R.id.cloud2),
-            gamingViewModel
-        );
-        
-        // 初始化動畫管理器
-        animationManager = new AnimationManager(width);
-        
-        // 設置背景管理器觀察遊戲狀態
-        backgroundManager.observeGameState(this, animationManager);
-        
-        // 初始化聲音管理器
-        soundManager = new SoundManager(this);
-        
-        // 初始化計時器管理器
-        timerManager = new ActionTimerManager();
-        
-        // 初始化遊戲管理器
-        gameManager = new GameManager(gamingViewModel);
-        gameManager.initJumpAnimation(dino, timerManager);
-        
-        // 開始跑步動畫
-        RunTask runTask = new RunTask(dino.getDinoImageView());
-        timerManager.startRun(runTask);
-        
-        // 初始化障礙物管理器
-        obstacleManager = new ObstacleManager(dino, 
-                                             findViewById(R.id.tree_one), 
-                                             findViewById(R.id.tree_two), 
-                                             findViewById(R.id.tree_three), 
-                                             gamingViewModel, gameManager);
+    /**
+     * 初始化遊戲管理器
+     */
+    private void initializeGameManagers() {
+        ExceptionHandler.safeExecute(() -> {
+            // 從依賴注入容器獲取管理器
+            soundManager = gameContainer.getSoundManager();
+            animationManager = gameContainer.createAnimationManager(screenWidth);
+            actionTimerManager = gameContainer.getActionTimerManager();
+            gameRepository = gameContainer.getGameRepository();
+
+            // 從依賴注入容器獲取遊戲狀態管理器
+            gameStateManager = gameContainer.getGameStateManager();
+
+            // 初始化恐龍角色
+            dino = new Dino(findViewById(R.id.dino), gamingViewModel);
+
+            // 創建遊戲管理器
+            gameManager = gameContainer.createGameManager(gamingViewModel);
+            gameManager.initJumpAnimation(dino, actionTimerManager);
+
+            // 開始跑步動畫
+            if (dino != null && dino.getDinoImageView() != null) {
+                RunTask runTask = new RunTask(dino.getDinoImageView());
+                actionTimerManager.startRun(runTask);
+            }
+
+            // 創建背景管理器
+            ImageView groundOne = findViewById(R.id.ground_one);
+            ImageView groundTwo = findViewById(R.id.ground_two);
+            ImageView cloudOne = findViewById(R.id.cloud1);
+            ImageView cloudTwo = findViewById(R.id.cloud2);
+
+            BackgroundManager backgroundManager = gameContainer.createBackgroundManager(
+                    groundOne, groundTwo, cloudOne, cloudTwo, gamingViewModel);
+            backgroundManager.observeGameState(this, animationManager);
+
+            // 創建障礙物管理器
+            ImageView treeOne = findViewById(R.id.tree_one);
+            ImageView treeTwo = findViewById(R.id.tree_two);
+            ImageView treeThree = findViewById(R.id.tree_three);
+
+            obstacleManager = gameContainer.createObstacleManager(
+                    dino, treeOne, treeTwo, treeThree, gamingViewModel, gameManager);
+
+            Log.d(TAG, "Game managers initialized successfully");
+        }, "Initialize game managers");
     }
 
+    /**
+     * 開始背景動畫
+     */
     private void startBackgroundAnimations() {
-        // 獲取背景元素
-        ImageView groundOne = findViewById(R.id.ground_one);
-        ImageView groundTwo = findViewById(R.id.ground_two);
-        ImageView cloudOne = findViewById(R.id.cloud1);
-        ImageView cloudTwo = findViewById(R.id.cloud2);
-        
-        // 開始背景動畫
-        animationManager.startGroundAnimation(groundOne, groundTwo, GROUND_MOVE_DURATION);
-        animationManager.startCloudAnimation(cloudOne, cloudTwo, CLOUD_MOVE_DURATION);
+        ExceptionHandler.safeExecute(() -> {
+            // 獲取背景元素
+            ImageView groundOne = findViewById(R.id.ground_one);
+            ImageView groundTwo = findViewById(R.id.ground_two);
+            ImageView cloudOne = findViewById(R.id.cloud1);
+            ImageView cloudTwo = findViewById(R.id.cloud2);
+
+            // 開始背景動畫
+            animationManager.startGroundAnimation(groundOne, groundTwo,
+                    GameConstants.Animation.GROUND_MOVE_DURATION);
+            animationManager.startCloudAnimation(cloudOne, cloudTwo,
+                    GameConstants.Animation.CLOUD_MOVE_DURATION);
+        }, "Start background animations");
     }
 
+    /**
+     * 開始障礙物生成
+     */
+    private void startObstacleGeneration() {
+        ExceptionHandler.safeExecute(() -> {
+            if (obstacleManager != null) {
+                obstacleManager.startObstacleGeneration(screenWidth);
+            }
+        }, "Start obstacle generation");
+    }
+
+    /**
+     * 設置觀察者
+     */
     private void setupObservers() {
-        // 觀察分數變化
-        gamingViewModel.getScore().observe(this, score -> {
-            tv_score.setText(String.valueOf(score));
-        });
+        ExceptionHandler.safeExecute(() -> {
+            // 觀察分數變化
+            gamingViewModel.getScore().observe(this, score -> {
+                if (score != null && scoreTextView != null) {
+                    runOnUiThread(() -> {
+                        if (scoreTextView != null) {
+                            scoreTextView.setText(String.valueOf(score));
+                        }
+                    });
+                }
+            });
 
-        // 觀察遊戲結束狀態
-        gamingViewModel.isGameOver().observe(this, isGameOver -> {
-            if (isGameOver) {
-                handleGameOver();
-            } else {
-                tv_gameOver.setVisibility(View.INVISIBLE);
-            }
-        });
+            // 觀察遊戲結束狀態
+            gamingViewModel.isGameOver().observe(this, isGameOver -> {
+                if (isGameOver != null && isGameOver) {
+                    handleGameOver();
+                } else {
+                    runOnUiThread(() -> {
+                        if (gameOverTextView != null) {
+                            gameOverTextView.setVisibility(View.INVISIBLE);
+                        }
+                    });
+                }
+            });
 
-        // 觀察受傷動畫觸發
-        gamingViewModel.shouldPlayHurtAnimation().observe(this, shouldPlay -> {
-            if (shouldPlay) {
-                dino.playHurtAnimation();
-                gamingViewModel.setPlayHurtAnimation(false);
-            }
-        });
+            // 觀察受傷動畫觸發
+            gamingViewModel.shouldPlayHurtAnimation().observe(this, shouldPlay -> {
+                if (shouldPlay != null && shouldPlay) {
+                    playHurtAnimation();
+                    gamingViewModel.setPlayHurtAnimation(false);
+                }
+            });
 
-        // 觀察生命值變化
-        gamingViewModel.getHeart().observe(this, heart -> {
-            if (heart == 2) {
-                hearts.get(0).setVisibility(View.INVISIBLE);
-            } else if (heart == 1) {
-                hearts.get(1).setVisibility(View.INVISIBLE);
-            } else if (heart == 0) {
-                hearts.get(2).setVisibility(View.INVISIBLE);
-            }
-        });
+            // 觀察生命值變化
+            gamingViewModel.getHeart().observe(this, heart -> {
+                if (heart != null) {
+                    Log.d(TAG, "Heart observer triggered with value: " + heart);
+                    updateHeartsDisplay(heart);
+                } else {
+                    Log.w(TAG, "Heart observer triggered with null value");
+                }
+            });
+        }, "Setup observers");
     }
 
-    private void handleGameOver() {
-        soundManager.playDeathSound();
-        dino.getDinoImageView().setImageResource(R.drawable.dino_6);
-        tv_gameOver.setVisibility(VISIBLE);
+    /**
+     * 更新生命值顯示
+     */
+    private void updateHeartsDisplay(int heartCount) {
+        ExceptionHandler.safeExecute(() -> {
+            if (heartImageViews != null) {
+                Log.d(TAG, "Updating hearts display: " + heartCount + " hearts");
 
-        if (gameManager.getJumpAnimator().isRunning()) {
-            gameManager.getJumpAnimator().cancel();
+                // 確保在主線程中更新UI
+                runOnUiThread(() -> {
+                    for (int i = 0; i < heartImageViews.size(); i++) {
+                        ImageView heart = heartImageViews.get(i);
+                        if (heart != null) {
+                            boolean shouldBeVisible = i < heartCount;
+                            heart.setVisibility(shouldBeVisible ? VISIBLE : View.GONE);
+                            Log.d(TAG, "Heart " + (i + 1) + " visibility: " + shouldBeVisible);
+                        }
+                    }
+                });
+            }
+        }, "Update hearts display");
+    }
+
+    /**
+     * 播放受傷動畫
+     */
+    private void playHurtAnimation() {
+        if (dino != null) {
+            dino.playHurtAnimation();
         }
-
-        timerManager.stopRun();
-        cdt.cancel();
+        if (soundManager != null && gameStateManager != null && gameStateManager.isSoundEnabled()) {
+            soundManager.playDeathSound();
+        }
     }
 
-    // 設置跳躍點擊事件
+    /**
+     * 處理遊戲結束
+     */
+    private void handleGameOver() {
+        ExceptionHandler.safeExecute(() -> {
+            // 播放死亡音效
+            if (soundManager != null && gameStateManager != null && gameStateManager.isSoundEnabled()) {
+                soundManager.playDeathSound();
+            }
+
+            // 設置恐龍死亡圖片
+            if (dino != null && dino.getDinoImageView() != null) {
+                runOnUiThread(() -> {
+                    if (dino.getDinoImageView() != null) {
+                        dino.getDinoImageView().setImageResource(R.drawable.dino_6);
+                    }
+                });
+            }
+
+            // 顯示遊戲結束文字
+            if (gameOverTextView != null) {
+                runOnUiThread(() -> {
+                    if (gameOverTextView != null) {
+                        gameOverTextView.setVisibility(VISIBLE);
+                    }
+                });
+            }
+
+            // 停止跳躍動畫
+            if (gameManager != null) {
+                gameManager.stopJump();
+            }
+
+            // 停止跑步動畫
+            if (actionTimerManager != null) {
+                actionTimerManager.stopRun();
+            }
+
+            // 停止分數計時器
+            if (scoreTimer != null) {
+                scoreTimer.cancel();
+            }
+
+            // 保存遊戲數據
+            saveGameData();
+
+            Log.d(TAG, "Game over handled");
+        }, "Handle game over");
+    }
+
+    /**
+     * 保存遊戲數據
+     */
+    private void saveGameData() {
+        if (gameRepository != null && gamingViewModel != null) {
+            Long currentScore = gamingViewModel.getScore().getValue();
+            if (currentScore != null) {
+                gameRepository.saveHighScore(currentScore);
+                gameRepository.updateGameStats(currentScore);
+            }
+        }
+    }
+
+    /**
+     * 設置跳躍點擊事件
+     */
     private void setupJumpClickListener() {
-        constraintLayout.setOnClickListener(view -> {
+        ExceptionHandler.safeExecute(() -> {
+            if (gameLayout != null) {
+                gameLayout.setOnClickListener(view -> {
+                    handleGameClick();
+                });
+            }
+        }, "Setup jump click listener");
+    }
+
+    /**
+     * 處理遊戲點擊事件
+     */
+    private void handleGameClick() {
+        ExceptionHandler.safeExecute(() -> {
             // 檢查是否需要重新開始遊戲
             Boolean needRestartValue = gamingViewModel.needRestart().getValue();
             if (needRestartValue != null && needRestartValue) {
-                reStart();
+                restartGame();
                 return;
             }
 
@@ -224,50 +385,150 @@ public class GamingActivity extends AppCompatActivity {
             }
 
             // 播放跳躍音效
-            soundManager.playJumpSound();
-            
+            if (soundManager != null && gameStateManager != null && gameStateManager.isSoundEnabled()) {
+                soundManager.playJumpSound();
+            }
+
             // 開始跳躍
-            gameManager.startJump();
-        });
+            if (gameManager != null) {
+                gameManager.startJump();
+            }
+        }, "Handle game click");
     }
 
-    private void reStart() {
-        gamingViewModel.setNeedRestart(false);
-        gameManager.restart(dino, hearts, timerManager);
-        animationManager.resume();
-        obstacleManager.reSetTree();
-        tv_gameOver.setVisibility(View.INVISIBLE);
+    /**
+     * 重新開始遊戲
+     */
+    private void restartGame() {
+        ExceptionHandler.safeExecute(() -> {
+            gamingViewModel.setNeedRestart(false);
 
-        // 障礙移動與判定
-        obstacleManager.startObstacleGeneration(width);
+            // 重置遊戲狀態
+            if (gameManager != null) {
+                gameManager.restart(dino, heartImageViews, actionTimerManager);
+            }
 
-        cdt.start();
+            // 重置障礙物
+            if (obstacleManager != null) {
+                obstacleManager.resetObstacles();
+                // 重新開始障礙物生成
+                obstacleManager.startObstacleGeneration(screenWidth);
+            }
 
-        gameManager.getJumpAnimator().end();
+            // 恢復動畫
+            if (animationManager != null) {
+                animationManager.resume();
+            }
+
+            // 隱藏遊戲結束文字
+            if (gameOverTextView != null) {
+                gameOverTextView.setVisibility(View.INVISIBLE);
+            }
+
+            // 重新開始分數計時器
+            initializeScoreTimer();
+
+            Log.d(TAG, "Game restarted");
+        }, "Restart game");
     }
 
-    private void initCountDownTimer(GamingViewModel viewModel) {
-        cdt = new CountDownTimer(HUNDRED_THOUSAND, 1) {
-            @Override
-            public void onTick(long millisUntilFinished) {
-                viewModel.increaseScore(HUNDRED_THOUSAND - millisUntilFinished);
+    /**
+     * 初始化分數計時器
+     */
+    private void initializeScoreTimer() {
+        ExceptionHandler.safeExecute(() -> {
+            scoreTimer = new CountDownTimer(GameConstants.GameLogic.HUNDRED_THOUSAND, 1) {
+                @Override
+                public void onTick(long millisUntilFinished) {
+                    if (gamingViewModel != null) {
+                        gamingViewModel.increaseScore(GameConstants.GameLogic.HUNDRED_THOUSAND - millisUntilFinished);
+                    }
+                }
+
+                @Override
+                public void onFinish() {
+                    // 計時器結束
+                    Log.d(TAG, "Score timer finished");
+                }
+            };
+            scoreTimer.start();
+        }, "Initialize score timer");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        ExceptionHandler.safeExecute(() -> {
+            // 暫停動畫
+            if (animationManager != null) {
+                animationManager.pause();
             }
 
-            @Override
-            public void onFinish() {
-                // 無需操作
+            // 停止跑步動畫
+            if (actionTimerManager != null) {
+                actionTimerManager.stopRun();
             }
-        }.start();
+
+            Log.d(TAG, "GamingActivity paused");
+        }, "GamingActivity onPause");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        ExceptionHandler.safeExecute(() -> {
+            // 恢復動畫（如果遊戲沒有結束）
+            Boolean isGameOver = gamingViewModel != null ? gamingViewModel.isGameOver().getValue() : null;
+            if (isGameOver == null || !isGameOver) {
+                if (animationManager != null) {
+                    animationManager.resume();
+                }
+
+                // 恢復跑步動畫
+                if (dino != null && dino.getDinoImageView() != null && actionTimerManager != null) {
+                    RunTask runTask = new RunTask(dino.getDinoImageView());
+                    actionTimerManager.startRun(runTask);
+                }
+            }
+
+            Log.d(TAG, "GamingActivity resumed");
+        }, "GamingActivity onResume");
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        soundManager.release();
-        animationManager.stop();
-        if (cdt != null) {
-            cdt.cancel();
-        }
+
+        ExceptionHandler.safeExecute(() -> {
+            // 停止分數計時器
+            if (scoreTimer != null) {
+                scoreTimer.cancel();
+                scoreTimer = null;
+            }
+
+            // 清理音效管理器
+            if (soundManager != null) {
+                soundManager.release();
+            }
+
+            // 停止動畫管理器
+            if (animationManager != null) {
+                animationManager.stop();
+            }
+
+            // 清理遊戲管理器
+            if (gameManager != null) {
+                gameManager.cleanup();
+                gameManager = null;
+            }
+
+            // 清理依賴注入容器
+            if (gameContainer != null) {
+                gameContainer.cleanup();
+            }
+
+            Log.d(TAG, "GamingActivity destroyed");
+        }, "GamingActivity onDestroy");
     }
 }
 
