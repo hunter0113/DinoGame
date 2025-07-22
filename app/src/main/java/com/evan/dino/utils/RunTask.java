@@ -1,9 +1,7 @@
 package com.evan.dino.utils;
 
 import android.widget.ImageView;
-
 import com.evan.dino.R;
-
 import java.util.TimerTask;
 
 /**
