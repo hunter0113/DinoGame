@@ -7,8 +7,11 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 import com.evan.dino.R;
+import com.evan.dino.di.GameContainer;
+import com.evan.dino.repository.GameRepository;
 import com.evan.dino.utils.ExceptionHandler;
 
 /**
@@ -19,6 +22,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     
     private Button startGameButton;
+    private TextView highScoreTextView;
+    private GameRepository gameRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
 
         ExceptionHandler.safeExecute(() -> {
             initializeViews();
+            initializeHighScore();
             setupClickListeners();
             Log.d(TAG, "MainActivity initialized successfully");
         }, "MainActivity onCreate");
@@ -37,6 +43,25 @@ public class MainActivity extends AppCompatActivity {
      */
     private void initializeViews() {
         startGameButton = findViewById(R.id.start_light);
+        highScoreTextView = findViewById(R.id.high_score);
+    }
+    
+    /**
+     * 初始化最高分顯示
+     */
+    private void initializeHighScore() {
+        ExceptionHandler.safeExecute(() -> {
+            // 從依賴注入容器獲取 GameRepository
+            GameContainer gameContainer = GameContainer.getInstance(this);
+            gameRepository = gameContainer.getGameRepository();
+            
+            // 讀取並顯示最高分
+            if (gameRepository != null && highScoreTextView != null) {
+                long highScore = gameRepository.getHighScore();
+                highScoreTextView.setText("歷史最高分: " + highScore);
+                Log.d(TAG, "High score displayed: " + highScore);
+            }
+        }, "Initialize high score");
     }
     
     /**
@@ -59,5 +84,25 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
             Log.d(TAG, "GamingActivity started");
         }, "Start gaming activity");
+    }
+    
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 當從遊戲返回時，更新最高分顯示
+        ExceptionHandler.safeExecute(() -> {
+            updateHighScoreDisplay();
+        }, "Update high score on resume");
+    }
+    
+    /**
+     * 更新最高分顯示
+     */
+    private void updateHighScoreDisplay() {
+        if (gameRepository != null && highScoreTextView != null) {
+            long highScore = gameRepository.getHighScore();
+            highScoreTextView.setText("歷史最高分: " + highScore);
+            Log.d(TAG, "High score updated: " + highScore);
+        }
     }
 }

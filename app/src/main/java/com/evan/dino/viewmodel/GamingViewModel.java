@@ -18,6 +18,7 @@ public class GamingViewModel extends ViewModel {
     private final MutableLiveData<Integer> obstacleCount = new MutableLiveData<>(0);
     private final MutableLiveData<Integer> stepCount = new MutableLiveData<>(0);
     private final MutableLiveData<Boolean> isJumping = new MutableLiveData<>(false);
+    private final MutableLiveData<Long> highScore = new MutableLiveData<>(0L); // 歷史最高分
 
     public LiveData<Long> getScore() {
         return score;
@@ -85,6 +86,14 @@ public class GamingViewModel extends ViewModel {
         invincible.setValue(value);
     }
 
+    // 最高分相關方法
+    public LiveData<Long> getHighScore() {
+        return highScore;
+    }
+
+    public void setHighScore(long value) {
+        highScore.setValue(value);
+    }
 
     public void setHeart(int value) { 
         Log.d("GamingViewModel", "Setting heart value: " + value);
