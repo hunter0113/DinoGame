@@ -42,7 +42,7 @@ public class GamingActivity extends AppCompatActivity {
     // 遊戲組件
     private Dino dino;
     private CountDownTimer scoreTimer;
-    private TextView scoreTextView, gameOverTextView;
+    private TextView scoreTextView, gameOverTextView, highScoreTextView;
     private ConstraintLayout gameLayout;
     private final ArrayList<ImageView> heartImageViews = new ArrayList<>();
     private int screenWidth = 0;
@@ -101,6 +101,9 @@ public class GamingActivity extends AppCompatActivity {
                 updateHeartsDisplay(initialHeart);
             }
             
+            // 初始化最高分顯示
+            initializeHighScore();
+            
             Log.d(TAG, "GamingActivity initialized successfully");
         }, "GamingActivity onCreate");
     }
@@ -112,6 +115,7 @@ public class GamingActivity extends AppCompatActivity {
         gameLayout = findViewById(R.id.constraint_layout);
         scoreTextView = findViewById(R.id.score);
         gameOverTextView = findViewById(R.id.game_over);
+        highScoreTextView = findViewById(R.id.high_score);
 
         ImageView heart1 = findViewById(R.id.heart1);
         ImageView heart2 = findViewById(R.id.heart2);
@@ -252,9 +256,33 @@ public class GamingActivity extends AppCompatActivity {
                     Log.w(TAG, "Heart observer triggered with null value");
                 }
             });
+
+            // 觀察最高分變化
+            gamingViewModel.getHighScore().observe(this, highScore -> {
+                if (highScore != null && highScoreTextView != null) {
+                    runOnUiThread(() -> {
+                        if (highScoreTextView != null) {
+                            highScoreTextView.setText("最高分: " + highScore);
+                        }
+                    });
+                }
+            });
         }, "Setup observers");
     }
     
+    /**
+     * 初始化最高分顯示
+     */
+    private void initializeHighScore() {
+        ExceptionHandler.safeExecute(() -> {
+            if (gameRepository != null && gamingViewModel != null) {
+                long highScore = gameRepository.getHighScore();
+                gamingViewModel.setHighScore(highScore);
+                Log.d(TAG, "High score initialized: " + highScore);
+            }
+        }, "Initialize high score");
+    }
+
     /**
      * 更新生命值顯示
      */
@@ -347,8 +375,14 @@ public class GamingActivity extends AppCompatActivity {
         if (gameRepository != null && gamingViewModel != null) {
             Long currentScore = gamingViewModel.getScore().getValue();
             if (currentScore != null) {
+                // 保存最高分
                 gameRepository.saveHighScore(currentScore);
+                // 更新 ViewModel 中的最高分（如果創建了新紀錄）
+                long newHighScore = gameRepository.getHighScore();
+                gamingViewModel.setHighScore(newHighScore);
+                // 更新遊戲統計
                 gameRepository.updateGameStats(currentScore);
+                Log.d(TAG, "Game data saved. Current score: " + currentScore + ", High score: " + newHighScore);
             }
         }
     }
