@@ -42,7 +42,7 @@ public class GamingActivity extends AppCompatActivity {
     // 遊戲組件
     private Dino dino;
     private CountDownTimer scoreTimer;
-    private TextView scoreTextView, gameOverTextView;
+    private TextView scoreTextView, gameOverTextView, highScoreTextView;
     private ConstraintLayout gameLayout;
     private final ArrayList<ImageView> heartImageViews = new ArrayList<>();
     private int screenWidth = 0;
@@ -58,7 +58,7 @@ public class GamingActivity extends AppCompatActivity {
 
     // ViewModel
     private GamingViewModel gamingViewModel;
-
+    
     // 依賴注入容器
     private GameContainer gameContainer;
 
@@ -70,37 +70,40 @@ public class GamingActivity extends AppCompatActivity {
         ExceptionHandler.safeExecute(() -> {
             // 初始化依賴注入容器
             gameContainer = GameContainer.getInstance(this);
-
+            
             // 初始化 ViewModel
             gamingViewModel = new ViewModelProvider(this).get(GamingViewModel.class);
 
             // 初始化視圖元件
             initializeViews();
-
+            
             // 初始化遊戲管理器
             initializeGameManagers();
-
+            
             // 設置觀察者
             setupObservers();
-
+            
             // 設置跳躍點擊事件
             setupJumpClickListener();
-
+            
             // 開始背景動畫
             startBackgroundAnimations();
-
+            
             // 開始障礙物生成
             startObstacleGeneration();
-
+            
             // 初始化分數計時器
             initializeScoreTimer();
-
+            
             // 初始化生命值顯示
             Integer initialHeart = gamingViewModel.getHeart().getValue();
             if (initialHeart != null) {
                 updateHeartsDisplay(initialHeart);
             }
-
+            
+            // 初始化最高分顯示
+            initializeHighScore();
+            
             Log.d(TAG, "GamingActivity initialized successfully");
         }, "GamingActivity onCreate");
     }
@@ -112,6 +115,7 @@ public class GamingActivity extends AppCompatActivity {
         gameLayout = findViewById(R.id.constraint_layout);
         scoreTextView = findViewById(R.id.score);
         gameOverTextView = findViewById(R.id.game_over);
+        highScoreTextView = findViewById(R.id.high_score);
 
         ImageView heart1 = findViewById(R.id.heart1);
         ImageView heart2 = findViewById(R.id.heart2);
@@ -137,41 +141,41 @@ public class GamingActivity extends AppCompatActivity {
             animationManager = gameContainer.createAnimationManager(screenWidth);
             actionTimerManager = gameContainer.getActionTimerManager();
             gameRepository = gameContainer.getGameRepository();
-
+            
             // 從依賴注入容器獲取遊戲狀態管理器
             gameStateManager = gameContainer.getGameStateManager();
-
+            
             // 初始化恐龍角色
             dino = new Dino(findViewById(R.id.dino), gamingViewModel);
-
+            
             // 創建遊戲管理器
             gameManager = gameContainer.createGameManager(gamingViewModel);
             gameManager.initJumpAnimation(dino, actionTimerManager);
-
+            
             // 開始跑步動畫
             if (dino != null && dino.getDinoImageView() != null) {
                 RunTask runTask = new RunTask(dino.getDinoImageView());
                 actionTimerManager.startRun(runTask);
             }
-
+            
             // 創建背景管理器
             ImageView groundOne = findViewById(R.id.ground_one);
             ImageView groundTwo = findViewById(R.id.ground_two);
             ImageView cloudOne = findViewById(R.id.cloud1);
             ImageView cloudTwo = findViewById(R.id.cloud2);
-
+            
             BackgroundManager backgroundManager = gameContainer.createBackgroundManager(
-                    groundOne, groundTwo, cloudOne, cloudTwo, gamingViewModel);
+                groundOne, groundTwo, cloudOne, cloudTwo, gamingViewModel);
             backgroundManager.observeGameState(this, animationManager);
-
+            
             // 創建障礙物管理器
             ImageView treeOne = findViewById(R.id.tree_one);
             ImageView treeTwo = findViewById(R.id.tree_two);
             ImageView treeThree = findViewById(R.id.tree_three);
-
+            
             obstacleManager = gameContainer.createObstacleManager(
-                    dino, treeOne, treeTwo, treeThree, gamingViewModel, gameManager);
-
+                dino, treeOne, treeTwo, treeThree, gamingViewModel, gameManager);
+            
             Log.d(TAG, "Game managers initialized successfully");
         }, "Initialize game managers");
     }
@@ -186,15 +190,15 @@ public class GamingActivity extends AppCompatActivity {
             ImageView groundTwo = findViewById(R.id.ground_two);
             ImageView cloudOne = findViewById(R.id.cloud1);
             ImageView cloudTwo = findViewById(R.id.cloud2);
-
+            
             // 開始背景動畫
-            animationManager.startGroundAnimation(groundOne, groundTwo,
-                    GameConstants.Animation.GROUND_MOVE_DURATION);
-            animationManager.startCloudAnimation(cloudOne, cloudTwo,
-                    GameConstants.Animation.CLOUD_MOVE_DURATION);
+            animationManager.startGroundAnimation(groundOne, groundTwo, 
+                GameConstants.Animation.GROUND_MOVE_DURATION);
+            animationManager.startCloudAnimation(cloudOne, cloudTwo, 
+                GameConstants.Animation.CLOUD_MOVE_DURATION);
         }, "Start background animations");
     }
-
+    
     /**
      * 開始障礙物生成
      */
@@ -252,7 +256,31 @@ public class GamingActivity extends AppCompatActivity {
                     Log.w(TAG, "Heart observer triggered with null value");
                 }
             });
+
+            // 觀察最高分變化
+            gamingViewModel.getHighScore().observe(this, highScore -> {
+                if (highScore != null && highScoreTextView != null) {
+                    runOnUiThread(() -> {
+                        if (highScoreTextView != null) {
+                            highScoreTextView.setText("最高分: " + highScore);
+                        }
+                    });
+                }
+            });
         }, "Setup observers");
+    }
+    
+    /**
+     * 初始化最高分顯示
+     */
+    private void initializeHighScore() {
+        ExceptionHandler.safeExecute(() -> {
+            if (gameRepository != null && gamingViewModel != null) {
+                long highScore = gameRepository.getHighScore();
+                gamingViewModel.setHighScore(highScore);
+                Log.d(TAG, "High score initialized: " + highScore);
+            }
+        }, "Initialize high score");
     }
 
     /**
@@ -262,7 +290,7 @@ public class GamingActivity extends AppCompatActivity {
         ExceptionHandler.safeExecute(() -> {
             if (heartImageViews != null) {
                 Log.d(TAG, "Updating hearts display: " + heartCount + " hearts");
-
+                
                 // 確保在主線程中更新UI
                 runOnUiThread(() -> {
                     for (int i = 0; i < heartImageViews.size(); i++) {
@@ -277,7 +305,7 @@ public class GamingActivity extends AppCompatActivity {
             }
         }, "Update hearts display");
     }
-
+    
     /**
      * 播放受傷動畫
      */
@@ -299,7 +327,7 @@ public class GamingActivity extends AppCompatActivity {
             if (soundManager != null && gameStateManager != null && gameStateManager.isSoundEnabled()) {
                 soundManager.playDeathSound();
             }
-
+            
             // 設置恐龍死亡圖片
             if (dino != null && dino.getDinoImageView() != null) {
                 runOnUiThread(() -> {
@@ -308,7 +336,7 @@ public class GamingActivity extends AppCompatActivity {
                     }
                 });
             }
-
+            
             // 顯示遊戲結束文字
             if (gameOverTextView != null) {
                 runOnUiThread(() -> {
@@ -327,19 +355,19 @@ public class GamingActivity extends AppCompatActivity {
             if (actionTimerManager != null) {
                 actionTimerManager.stopRun();
             }
-
+            
             // 停止分數計時器
             if (scoreTimer != null) {
                 scoreTimer.cancel();
             }
-
+            
             // 保存遊戲數據
             saveGameData();
-
+            
             Log.d(TAG, "Game over handled");
         }, "Handle game over");
     }
-
+    
     /**
      * 保存遊戲數據
      */
@@ -347,8 +375,14 @@ public class GamingActivity extends AppCompatActivity {
         if (gameRepository != null && gamingViewModel != null) {
             Long currentScore = gamingViewModel.getScore().getValue();
             if (currentScore != null) {
+                // 保存最高分
                 gameRepository.saveHighScore(currentScore);
+                // 更新 ViewModel 中的最高分（如果創建了新紀錄）
+                long newHighScore = gameRepository.getHighScore();
+                gamingViewModel.setHighScore(newHighScore);
+                // 更新遊戲統計
                 gameRepository.updateGameStats(currentScore);
+                Log.d(TAG, "Game data saved. Current score: " + currentScore + ", High score: " + newHighScore);
             }
         }
     }
@@ -365,7 +399,7 @@ public class GamingActivity extends AppCompatActivity {
             }
         }, "Setup jump click listener");
     }
-
+    
     /**
      * 處理遊戲點擊事件
      */
@@ -388,7 +422,7 @@ public class GamingActivity extends AppCompatActivity {
             if (soundManager != null && gameStateManager != null && gameStateManager.isSoundEnabled()) {
                 soundManager.playJumpSound();
             }
-
+            
             // 開始跳躍
             if (gameManager != null) {
                 gameManager.startJump();
@@ -402,32 +436,32 @@ public class GamingActivity extends AppCompatActivity {
     private void restartGame() {
         ExceptionHandler.safeExecute(() -> {
             gamingViewModel.setNeedRestart(false);
-
+            
             // 重置遊戲狀態
             if (gameManager != null) {
                 gameManager.restart(dino, heartImageViews, actionTimerManager);
             }
-
+            
             // 重置障礙物
             if (obstacleManager != null) {
                 obstacleManager.resetObstacles();
                 // 重新開始障礙物生成
                 obstacleManager.startObstacleGeneration(screenWidth);
             }
-
+            
             // 恢復動畫
             if (animationManager != null) {
                 animationManager.resume();
             }
-
+            
             // 隱藏遊戲結束文字
             if (gameOverTextView != null) {
                 gameOverTextView.setVisibility(View.INVISIBLE);
             }
-
+            
             // 重新開始分數計時器
             initializeScoreTimer();
-
+            
             Log.d(TAG, "Game restarted");
         }, "Restart game");
     }
@@ -463,16 +497,16 @@ public class GamingActivity extends AppCompatActivity {
             if (animationManager != null) {
                 animationManager.pause();
             }
-
+            
             // 停止跑步動畫
             if (actionTimerManager != null) {
                 actionTimerManager.stopRun();
             }
-
+            
             Log.d(TAG, "GamingActivity paused");
         }, "GamingActivity onPause");
     }
-
+    
     @Override
     protected void onResume() {
         super.onResume();
@@ -483,14 +517,14 @@ public class GamingActivity extends AppCompatActivity {
                 if (animationManager != null) {
                     animationManager.resume();
                 }
-
+                
                 // 恢復跑步動畫
                 if (dino != null && dino.getDinoImageView() != null && actionTimerManager != null) {
                     RunTask runTask = new RunTask(dino.getDinoImageView());
                     actionTimerManager.startRun(runTask);
                 }
             }
-
+            
             Log.d(TAG, "GamingActivity resumed");
         }, "GamingActivity onResume");
     }
@@ -498,35 +532,35 @@ public class GamingActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
+        
         ExceptionHandler.safeExecute(() -> {
             // 停止分數計時器
             if (scoreTimer != null) {
                 scoreTimer.cancel();
                 scoreTimer = null;
             }
-
+            
             // 清理音效管理器
             if (soundManager != null) {
                 soundManager.release();
             }
-
+            
             // 停止動畫管理器
             if (animationManager != null) {
                 animationManager.stop();
             }
-
+            
             // 清理遊戲管理器
             if (gameManager != null) {
                 gameManager.cleanup();
                 gameManager = null;
             }
-
+            
             // 清理依賴注入容器
             if (gameContainer != null) {
                 gameContainer.cleanup();
             }
-
+            
             Log.d(TAG, "GamingActivity destroyed");
         }, "GamingActivity onDestroy");
     }
