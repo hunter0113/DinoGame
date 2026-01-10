@@ -1,4 +1,4 @@
-**# 🦕 DinoGame - Android 恐龍跑酷遊戲
+# 🦕 DinoGame - Android 恐龍跑酷遊戲
 
 一個基於 Android 平台開發的經典跑酷遊戲，靈感來自 Chrome 瀏覽器的離線小恐龍遊戲。採用現代化的 MVVM 架構設計，提供流暢的遊戲體驗。
 
