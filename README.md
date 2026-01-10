@@ -38,17 +38,17 @@ DinoGame 是一款橫向跑酷遊戲，玩家控制一隻恐龍跳躍躲避障�
 ```
 ┌─────────────────────────────────────┐
 │         View Layer (UI)             │
-│  - MainActivity                      │
-│  - GamingActivity                    │
+│  - MainActivity                     │
+│  - GamingActivity                   │
 └─────────────────────────────────────┘
                   ↓
 ┌─────────────────────────────────────┐
-│      ViewModel Layer                 │
-│  - GamingViewModel (LiveData)        │
+│      ViewModel Layer                │
+│  - GamingViewModel (LiveData)       │
 └─────────────────────────────────────┘
                   ↓
 ┌─────────────────────────────────────┐
-│      Manager Layer (Business Logic)  │
+│      Manager Layer (Business Logic) │
 │  - GameManager                      │
 │  - ObstacleManager                  │
 │  - AnimationManager                 │
@@ -59,13 +59,13 @@ DinoGame 是一款橫向跑酷遊戲，玩家控制一隻恐龍跳躍躲避障�
 └─────────────────────────────────────┘
                   ↓
 ┌─────────────────────────────────────┐
-│      Repository Layer (Data)         │
+│      Repository Layer (Data)        │
 │  - GameRepository                   │
 └─────────────────────────────────────┘
                   ↓
 ┌─────────────────────────────────────┐
-│      Model Layer                     │
-│  - Dino, GameStats, Point, Scope     │
+│      Model Layer                    │
+│  - Dino, GameStats, Point, Scope    │
 └─────────────────────────────────────┘
 ```
 
@@ -76,54 +76,6 @@ DinoGame 是一款橫向跑酷遊戲，玩家控制一隻恐龍跳躍躲避障�
 3. **管理器模式**：每個功能模組由專門的管理器負責
 4. **單例模式**：`GameContainer` 使用單例模式確保唯一實例
 5. **觀察者模式**：使用 `LiveData` 觀察者模式更新 UI
-
-## 📂 專案結構
-
-```
-DinoGame/
-├── app/
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/evan/dino/
-│   │   │   │   ├── activity/          # Activity 層
-│   │   │   │   │   ├── MainActivity.java
-│   │   │   │   │   └── GamingActivity.java
-│   │   │   │   ├── viewmodel/         # ViewModel 層
-│   │   │   │   │   └── GamingViewModel.java
-│   │   │   │   ├── manager/           # 業務邏輯層
-│   │   │   │   │   ├── GameManager.java
-│   │   │   │   │   ├── ObstacleManager.java
-│   │   │   │   │   ├── AnimationManager.java
-│   │   │   │   │   ├── BackgroundManager.java
-│   │   │   │   │   ├── SoundManager.java
-│   │   │   │   │   ├── GameStateManager.java
-│   │   │   │   │   └── ActionTimerManager.java
-│   │   │   │   ├── repository/        # 數據層
-│   │   │   │   │   └── GameRepository.java
-│   │   │   │   ├── model/             # 數據模型
-│   │   │   │   │   ├── Dino.java
-│   │   │   │   │   ├── GameStats.java
-│   │   │   │   │   ├── Point.java
-│   │   │   │   │   └── Scope.java
-│   │   │   │   ├── di/                # 依賴注入
-│   │   │   │   │   └── GameContainer.java
-│   │   │   │   ├── constants/         # 常量定義
-│   │   │   │   │   └── GameConstants.java
-│   │   │   │   └── utils/             # 工具類
-│   │   │   │       ├── ExceptionHandler.java
-│   │   │   │       └── RunTask.java
-│   │   │   ├── res/                   # 資源文件
-│   │   │   │   ├── layout/            # 布局文件
-│   │   │   │   ├── drawable/          # 圖片資源
-│   │   │   │   ├── raw/               # 音效和動畫資源
-│   │   │   │   └── values/            # 配置文件
-│   │   │   └── AndroidManifest.xml
-│   │   └── test/                      # 測試文件
-│   └── build.gradle
-├── build.gradle
-├── settings.gradle
-└── README.md
-```
 
 ## 🛠️ 技術棧
 
@@ -189,11 +141,3 @@ DinoGame/
 ## 📄 許可證
 
 本專案僅供學習和交流使用。
-
-## 🙏 致謝
-
-- 靈感來源：Chrome 瀏覽器離線小恐龍遊戲
-
----
-
-**享受遊戲，挑戰最高分！** 🎮🦕**
