@@ -1,1 +1,199 @@
-# DinoGame
+**# 🦕 DinoGame - Android 恐龍跑酷遊戲
+
+一個基於 Android 平台開發的經典跑酷遊戲，靈感來自 Chrome 瀏覽器的離線小恐龍遊戲。採用現代化的 MVVM 架構設計，提供流暢的遊戲體驗。
+
+## 📱 專案簡介
+
+DinoGame 是一款橫向跑酷遊戲，玩家控制一隻恐龍跳躍躲避障礙物，挑戰最高分數。遊戲具有流暢的動畫效果、音效系統、生命值機制和歷史最高分記錄功能。
+
+## ✨ 功能特點
+
+### 核心遊戲功能
+- 🦕 **恐龍角色控制**：點擊屏幕讓恐龍跳躍躲避障礙物
+- 🌵 **隨機障礙物生成**：多種仙人掌障礙物隨機出現，增加遊戲難度
+- ❤️ **生命值系統**：初始 3 條生命，碰撞後減少生命值
+- 🛡️ **無敵狀態**：受傷後短暫無敵時間，避免連續傷害
+- 📊 **分數系統**：實時計分，挑戰最高分數
+- 🏆 **歷史最高分記錄**：自動保存並顯示歷史最高分
+
+### 視覺與音效
+- 🎬 **流暢動畫**：恐龍跑步、跳躍動畫，背景滾動動畫
+- ☁️ **動態背景**：地面和雲朵持續滾動，營造速度感
+- 🔊 **音效系統**：跳躍音效、受傷音效、死亡音效
+- 🎨 **Lottie 動畫**：使用 Lottie 展示精美的動畫效果
+
+### 遊戲機制
+- 🔄 **遊戲重啟**：遊戲結束後點擊屏幕重新開始
+- ⏸️ **生命週期管理**：自動處理遊戲暫停和恢復
+- 💾 **數據持久化**：使用 SharedPreferences 保存遊戲數據
+- 📈 **遊戲統計**：記錄總遊戲次數、總分數等統計信息
+
+## 🏗️ 技術架構
+
+### 架構模式
+本專案採用 **MVVM (Model-View-ViewModel)** 架構模式，結合依賴注入和管理器模式，實現清晰的職責分離。
+
+### 架構分層
+
+```
+┌─────────────────────────────────────┐
+│         View Layer (UI)             │
+│  - MainActivity                      │
+│  - GamingActivity                    │
+└─────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────┐
+│      ViewModel Layer                 │
+│  - GamingViewModel (LiveData)        │
+└─────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────┐
+│      Manager Layer (Business Logic)  │
+│  - GameManager                      │
+│  - ObstacleManager                  │
+│  - AnimationManager                 │
+│  - BackgroundManager                │
+│  - SoundManager                     │
+│  - GameStateManager                 │
+│  - ActionTimerManager               │
+└─────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────┐
+│      Repository Layer (Data)         │
+│  - GameRepository                   │
+└─────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────┐
+│      Model Layer                     │
+│  - Dino, GameStats, Point, Scope     │
+└─────────────────────────────────────┘
+```
+
+### 核心設計模式
+
+1. **MVVM 模式**：使用 `LiveData` 實現響應式數據綁定
+2. **依賴注入**：自定義 `GameContainer` 管理組件生命週期
+3. **管理器模式**：每個功能模組由專門的管理器負責
+4. **單例模式**：`GameContainer` 使用單例模式確保唯一實例
+5. **觀察者模式**：使用 `LiveData` 觀察者模式更新 UI
+
+## 📂 專案結構
+
+```
+DinoGame/
+├── app/
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/com/evan/dino/
+│   │   │   │   ├── activity/          # Activity 層
+│   │   │   │   │   ├── MainActivity.java
+│   │   │   │   │   └── GamingActivity.java
+│   │   │   │   ├── viewmodel/         # ViewModel 層
+│   │   │   │   │   └── GamingViewModel.java
+│   │   │   │   ├── manager/           # 業務邏輯層
+│   │   │   │   │   ├── GameManager.java
+│   │   │   │   │   ├── ObstacleManager.java
+│   │   │   │   │   ├── AnimationManager.java
+│   │   │   │   │   ├── BackgroundManager.java
+│   │   │   │   │   ├── SoundManager.java
+│   │   │   │   │   ├── GameStateManager.java
+│   │   │   │   │   └── ActionTimerManager.java
+│   │   │   │   ├── repository/        # 數據層
+│   │   │   │   │   └── GameRepository.java
+│   │   │   │   ├── model/             # 數據模型
+│   │   │   │   │   ├── Dino.java
+│   │   │   │   │   ├── GameStats.java
+│   │   │   │   │   ├── Point.java
+│   │   │   │   │   └── Scope.java
+│   │   │   │   ├── di/                # 依賴注入
+│   │   │   │   │   └── GameContainer.java
+│   │   │   │   ├── constants/         # 常量定義
+│   │   │   │   │   └── GameConstants.java
+│   │   │   │   └── utils/             # 工具類
+│   │   │   │       ├── ExceptionHandler.java
+│   │   │   │       └── RunTask.java
+│   │   │   ├── res/                   # 資源文件
+│   │   │   │   ├── layout/            # 布局文件
+│   │   │   │   ├── drawable/          # 圖片資源
+│   │   │   │   ├── raw/               # 音效和動畫資源
+│   │   │   │   └── values/            # 配置文件
+│   │   │   └── AndroidManifest.xml
+│   │   └── test/                      # 測試文件
+│   └── build.gradle
+├── build.gradle
+├── settings.gradle
+└── README.md
+```
+
+## 🛠️ 技術棧
+
+### 主要依賴
+- **AndroidX AppCompat**：1.4.1
+- **AndroidX Lifecycle**：2.4.1 (LiveData, ViewModel)
+- **AndroidX ConstraintLayout**：2.1.3
+- **Lottie**：3.4.4 (動畫庫)
+- **Material Design**：1.5.0
+
+### 架構組件
+- **ViewModel**：管理 UI 相關數據
+- **LiveData**：響應式數據觀察
+- **SharedPreferences**：本地數據持久化
+
+### 遊戲操作
+- **跳躍**：點擊屏幕任意位置讓恐龍跳躍
+- **重新開始**：遊戲結束後點擊屏幕重新開始遊戲
+- **查看最高分**：主選單和遊戲界面都會顯示歷史最高分
+
+## 🎮 遊戲玩法
+
+1. 點擊主選單的「以正常模式 開啟遊戲!」按鈕開始遊戲
+2. 恐龍會自動向前奔跑
+3. 點擊屏幕讓恐龍跳躍，躲避障礙物
+4. 碰撞障礙物會減少生命值（初始 3 條生命）
+5. 生命值歸零時遊戲結束
+6. 遊戲結束後點擊屏幕可以重新開始
+7. 挑戰更高的分數，打破歷史記錄！
+
+## 📸 實機畫面展示
+
+### 主選單畫面
+<!-- 在此處添加主選單的實機畫面動圖 -->
+```
+[主選單畫面動圖預留位置]
+```
+
+### 遊戲進行中
+<!-- 在此處添加遊戲進行中的實機畫面動圖 -->
+```
+[遊戲進行中動圖預留位置]
+```
+
+### 遊戲結束畫面
+<!-- 在此處添加遊戲結束的實機畫面動圖 -->
+```
+[遊戲結束畫面動圖預留位置]
+```
+
+### 最高分顯示
+<!-- 在此處添加最高分顯示的實機畫面動圖 -->
+```
+[最高分顯示動圖預留位置]
+```
+
+
+## 👨‍💻 開發者
+
+- **開發者**：Evan
+- **專案開始時間**：2022/4/13
+
+## 📄 許可證
+
+本專案僅供學習和交流使用。
+
+## 🙏 致謝
+
+- 靈感來源：Chrome 瀏覽器離線小恐龍遊戲
+
+---
+
+**享受遊戲，挑戰最高分！** 🎮🦕**
