@@ -109,7 +109,7 @@ DinoGame 是一款橫向跑酷遊戲，玩家控制一隻恐龍跳躍躲避障�
 ## 📸 實機畫面展示
 
 ### 遊戲進行中
-![Dino Game Demo](./assets/demo.gif)
+![Dino Game Demo](./assets/dino_game.gif)
 
 ## 👨‍💻 開發者
 
